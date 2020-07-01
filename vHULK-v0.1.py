@@ -336,7 +336,8 @@ for i in range(0, len(array)):
     #print(position_pred_sp_sm, pred_sp_sm[0][position_pred_sp_sm])
     ##
     # Calculate entropy
-    entropy_genus_sm =  np.around(entr(pred_gen_sm).sum(axis=1),decimals=5)
+    entropy_genus_sm =  entr(pred_gen_sm).sum(axis=1)
+    #entropy_genus_sm = "{:.7f}".format(entr(pred_gen_sm).sum(axis=1))
     #
     # Apply decision tree
     #
