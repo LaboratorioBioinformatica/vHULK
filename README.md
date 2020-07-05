@@ -1,4 +1,5 @@
-<p align="center"> <img src="logo_vHULK.png" height="110" alt="vHULK" /> </p>
+<p align="center"> <img src="logo_vHULK.png" height="200" alt="vHULK" /> </p>
+
 # v.HULK
 Viral Host UnveiLing Kit - A tool-kit for phage host prediction
 
