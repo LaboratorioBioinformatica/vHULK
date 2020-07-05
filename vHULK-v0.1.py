@@ -15,24 +15,14 @@ import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import subprocess
 import datetime
-#import sklearn
 import argparse
 import warnings
 import csv
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-#import tensorflow.keras.utils as utils
-#from tensorflow import keras
-from random import shuffle, sample
-from sklearn.model_selection import train_test_split
-from sklearn.utils import class_weight
-from tensorflow.keras import optimizers, initializers
-from tensorflow.keras.callbacks import CSVLogger, TerminateOnNaN, EarlyStopping
 from time import gmtime, strftime
-from sklearn.preprocessing import MultiLabelBinarizer
 from tensorflow.keras.layers import Dense, Activation, LeakyReLU, ReLU
-from tensorflow.keras.models import Sequential
 from tensorflow.keras.models import load_model
 from scipy.special import entr
 
@@ -195,7 +185,7 @@ for binn in list_bins:
 	print('**Done with %d bins HMM searches...' % count_hmm)
 	## Create dictionary as ref of collumns - pVOGs
 	dic_vogs_headers = {}
-	with open('VOGs_header.txt', 'r') as file2:
+	with open('files/VOGs_header.txt', 'r') as file2:
 		for line2 in file2:
 			key = re.match('(.+)\n', line2).group(1)
 			dic_vogs_headers[key] = np.float32(0.0)
@@ -244,7 +234,7 @@ for binn in list_bins:
 				each_match[1] = 1
 				#print(each_match[1])
 			dic_matrices_by_genome[prefix][each_match[0]][gene] = np.float32(1.0) - np.float32(each_match[1])
-print('Done')
+print('\n**HMMscan has finished.')
 
 # Condense matrices to array by suming up columns
 list_condensed_matrices = []
@@ -270,13 +260,18 @@ for matrix in dic_matrices_by_genome:
 array = np.array(list_condensed_matrices)
 #print("ARRAY-SHAPE: ", len(array))
 
+###
+# Predictions
+###
+
+print("\n**Starting deeplearning predictions...")
 # load models
 model_genus_relu = load_model('models/model_genus_total_fixed_relu_08mar_2020.h5', custom_objects = {"LeakyReLU":LeakyReLU, "ReLU":ReLU})
 model_genus_sm = load_model('models/model_genus_total_fixed_softmax_01mar_2020.h5', custom_objects = {"LeakyReLU":LeakyReLU, "ReLU":ReLU})
 model_species_relu = load_model('models/model_species_total_fixed_relu_08mar_2020.h5', custom_objects = {"LeakyReLU":LeakyReLU, "ReLU":ReLU})
 model_species_sm = load_model('models/model_species_total_fixed_softmax_01mar_2020.h5', custom_objects = {"LeakyReLU":LeakyReLU, "ReLU":ReLU})
 
-with open('results.csv', 'w') as file:
+with open(input_folder+'results/results.csv', 'w') as file:
     file.write("BIN/genome,pred_genus_relu,score_genus_relu,red_genus_softmax,score_genus_softmax,pred_species_relu,score_species_relu,pred_species_softmax,score_species_softmax,final_prediction,entropy\n")
 
 for i in range(0, len(array)):
@@ -290,7 +285,7 @@ for i in range(0, len(array)):
         name_pred_gen_relu = "None"
         score_pred_gen_relu = "0"
     else:
-        list_hosts_genus = [line.rstrip('\n') for line in open('list_hosts_genus.txt')]
+        list_hosts_genus = [line.rstrip('\n') for line in open('files/list_hosts_genus.txt')]
         name_pred_gen_relu = list_hosts_genus[position_pred_gen_relu]
         score_pred_gen_relu = str(pred_gen_relu[0][position_pred_gen_relu])
         #print(list_hosts_genus[position_pred_gen_relu])
@@ -301,7 +296,7 @@ for i in range(0, len(array)):
     #print("Genus:Softmax")
     #print(pred_gen_sm)
     position_pred_gen_sm = np.argmax(pred_gen_sm)
-    list_hosts_genus = [line.rstrip('\n') for line in open('list_hosts_genus.txt')]
+    list_hosts_genus = [line.rstrip('\n') for line in open('files/list_hosts_genus.txt')]
     name_pred_gen_sm = list_hosts_genus[position_pred_gen_sm]
     score_pred_gen_sm = str(pred_gen_sm[0][position_pred_gen_sm])
     #print(list_hosts_genus[position_pred_gen_sm])
@@ -316,7 +311,7 @@ for i in range(0, len(array)):
         name_pred_sp_relu = "None"
         score_pred_sp_relu = "0"
     else:
-        list_hosts_sp = [line.rstrip('\n') for line in open('list_hosts_species.txt')]
+        list_hosts_sp = [line.rstrip('\n') for line in open('files/list_hosts_species.txt')]
         #print(list_hosts_sp)
         name_pred_sp_relu = list_hosts_sp[position_pred_sp_relu]
         score_pred_sp_relu = str(pred_sp_relu[0][position_pred_sp_relu])
@@ -328,7 +323,7 @@ for i in range(0, len(array)):
     #print("Species:Softmax")
     #print(pred_sp_sm)
     position_pred_sp_sm = np.argmax(pred_sp_sm)
-    list_hosts_sp = [line.rstrip('\n') for line in open('list_hosts_species.txt')]
+    list_hosts_sp = [line.rstrip('\n') for line in open('files/list_hosts_species.txt')]
     #print(list_hosts_sp)
     name_pred_sp_sm = list_hosts_sp[position_pred_sp_sm]
     score_pred_sp_sm = str(pred_sp_sm[0][position_pred_sp_sm])
@@ -381,9 +376,9 @@ for i in range(0, len(array)):
 
     
     # Print CSV
-    with open('results.csv', 'a') as file:
+    with open(input_folder+'results/results.csv', 'a') as file:
         file.write(list_file_names[i]+","+name_pred_gen_relu+","+score_pred_gen_relu+","+name_pred_gen_sm+","+score_pred_gen_sm+","+name_pred_sp_relu+","+score_pred_sp_relu+","+name_pred_sp_sm+","+score_pred_sp_sm+","+final_decision+","+str(entropy_genus_sm[0])+"\n")
 
 
     #print(list_file_names[i]+","+name_pred_gen_relu+":"+score_pred_gen_relu+","+name_pred_gen_sm+":"+score_pred_gen_sm+","+name_pred_sp_relu+":"+score_pred_sp_relu+","+name_pred_sp_sm+":"+score_pred_sp_sm+","+final_decision+","+str(entropy_genus_sm))
-print("Done")
+print("\n**Deep learning predictions have finished. Results are in file \"results.csv\" inside input_folder/results/.\n**Thank you for using v.HULK")
