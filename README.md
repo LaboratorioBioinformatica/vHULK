@@ -1,6 +1,5 @@
 # v.HULK
-## Viral Host UnveiLing Kit  
-A tool-kit for phage host prediction
+Viral Host UnveiLing Kit - A tool-kit for phage host prediction
 
 ### Phage Host Prediction using high level features and neural networks
 Metagenomics and sequencing techiniques have greatly improved in these last five years and, as a consequence, the amount of data from microbial communities is astronomic. An import part of the microbial community are phages, which have their own ecological roles in the environment. Besides that, they have been also given a possible human relevant (clinical) role as terminators of multidrug resistant bacterial infections. A lot of basic research still need to be done in the **Phage therapy** field, and part of this research involves gathering knowledge from new phages present in the environment as well as about their relationship with clinical relevant bacterial pathogens.
