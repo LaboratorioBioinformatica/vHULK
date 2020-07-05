@@ -83,6 +83,10 @@ To try these examples, run:
 python3 vHULK_v0.1.py -i test_input/ -t 12
 ```
 
+### Input
+v.HULK is ready to accept whole or partial phage genomes. Just keep in mind that v.HULK's predictions are based in high level annotated features, i.e., features that depend on gene annotation. So, very small contigs with few or no entire genes will not provide features do v.HULK work with. In general, if you have a partial genome larger than 10 kbp you should be fine.  
+Only FASTA nucleotide files are accepted, and v.HULK will understand each individual file as one phage. So, single-sequence FASTA files will be understood as whole or partial phage genomes and multiFASTA as a metagenomic BIN. Our tests indicate that prediction's accuracy is not affected in fragmented genomes (BINs).
+
 ### Output
 v.HULK main output file is "results.csv", which will be inside input_folder/results after execution is finished. If more than one fasta file is inside the input_folder, v.HULK will understand that there are more than one bin or genome for prediction. Therefore, each line of the CSV file will correspond to a bin or genome identified by the first column.  
 Output example:
