@@ -82,3 +82,16 @@ To try these examples, run:
 ```
 python3 vHULK_v0.1.py -i test_input/ -t 12
 ```
+
+### Output
+v.HULK main output file is "results.csv", which will be inside input_folder/results after execution is finished. If more than one fasta file is inside the input_folder, v.HULK will understand that there are more than one bin or genome for prediction. Therefore, each line of the CSV file will correspond to a bin or genome identified by the first column.  
+Output example:
+```
+BIN/genome,pred_genus_relu,score_genus_relu,red_genus_softmax,score_genus_softmax,pred_species_relu,score_species_relu,pred_species_softmax,score_species_softmax,final_prediction,entropy
+MK801680_BIN_staphylococcus_aureus,Staphylococcus,1.0,Staphylococcus,0.9999988,Staphylococcus_aureus,1.0,Staphylococcus_aureus,0.9999976,Staphylococcus_aureus,1.9657731e-05
+ZC4_test,Mycobacterium,0.31396204,Streptomyces,0.9495423,None,0,Streptomyces_griseus,0.4496213,Streptomyces,0.31331635
+MK570225_enterococcus_faecalis,Enterococcus,1.0,Enterococcus,0.99999917,None,0,Enterococcus_faecalis,0.9999571,Enterococcus_faecalis,1.4299788e-05
+MK524521_mycobacterium_smegmatis,Mycobacterium,1.0,Mycobacterium,1.0,Mycobacterium_smegmatis,1.0,Mycobacterium_smegmatis,1.0,Mycobacterium_smegmatis,1.465061e-11
+MN41915_vibrio_cholerae,None,0,Vibrio,1.0,None,0,Vibrio_cholerae,0.99995685,Vibrio_cholerae,1.9252913e-11
+MN689520_lactococcus_lactis,Lactococcus,1.0,Lactococcus,1.0,Lactococcus_lactis,1.0,Lactococcus_lactis,0.9999994,Lactococcus_lactis,4.9965405e-07
+```
