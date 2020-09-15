@@ -70,14 +70,14 @@ args = parser.parse_args()
 
 
 # Greeting message
-print('\n**Welcome to the v.HULK toolkit for phage host prediction!\n')
+print('\n**Welcome v.HULK, a toolkit for phage host prediction!\n')
 
 
 
 # Verify databases
-#if not os.path.isfile('models/all_vogs_hmm_profiles_feb2018.hmm'):
-#	print('**Your database and models are not set. Please, run: python download_and_set_models.py \n')
-#	quit()
+if not os.path.isfile('models/all_vogs_hmm_profiles_feb2018.hmm'):
+	print('**Your database and models are not set. Please, run: python download_and_set_models.py \n')
+	quit()
 
 
 # Create Filehandle for warnings
@@ -111,10 +111,10 @@ else:
 			count_bins += 1
 
 if count_bins == 0:
-	print('**There is no valid bin inside the input folder (%s).\nBins should be in \'.fasta\' or \'.fa\' format.\nExiting...'%input_folder)
+	print('**There is no valid genome inside the input folder (%s).\nGenome or bins should be in \'.fasta\' or \'.fa\' format.\nExiting...'%input_folder)
 	quit()
 
-print('**Arguments are OK. Checked the input folder and found %d bins.\n' % count_bins)
+print('**Arguments are OK. Checked the input folder and found %d genomes.\n' % count_bins)
 print('**'+str(datetime.datetime.now()))
 
 # Create results folder
@@ -139,12 +139,12 @@ for binn in list_bins:
 		len_bin += len(record.seq)
 	#If a bin/genome is too short, skip it
 	if len_bin < 5000:
-		print('**v.HULK has found a bin/genome, which is too short to code proteins (<5000pb). As CDSs are an import feature for v.HULK, we will be skipping this bin: '+binn)
+		print('**v.HULK has found a genome or bin, which is too short to code proteins (<5000pb). As CDSs are an import feature for v.HULK, we will be skipping this: '+binn)
 		continue  
-	#run_prokka(binn, input_folder, threads)
+	run_prokka(binn, input_folder, threads)
 	count_prokka += 1
 	if count_prokka % 10 == 0:
-		print('**Done with %d bins...' % count_prokka)
+		print('**Done with %d genomes...' % count_prokka)
 print('**Prokka tasks have finished!\n')
 
 
@@ -160,7 +160,7 @@ try:
 except:
 	os.mkdir(input_folder + 'results/hmmscan/')
 
-# Call HMMscan to all bins
+# Call HMMscan to all genomes
 dic_matrices_by_genome = {}
 prop_hmms_hits = {}
 count_hmm = 0
@@ -174,9 +174,9 @@ for binn in list_bins:
 	#if os.path.exists(input_folder + 'results/hmmscan/' + prefix + '_hmmscan.tbl'):
 	#	continue
 	try:
-		#subprocess.call(command_line_hmmscan, shell=True)
+		subprocess.call(command_line_hmmscan, shell=True)
 		# Comment line above and uncomment line below in case you want to run v.HULK without running hmmscan all over again
-                True
+		#True
 	except:
 		print('**Error calling HMMscan:', command_line_hmmscan)
 		quit()
@@ -272,7 +272,7 @@ model_species_relu = load_model('models/model_species_total_fixed_relu_08mar_202
 model_species_sm = load_model('models/model_species_total_fixed_softmax_01mar_2020.h5', custom_objects = {"LeakyReLU":LeakyReLU, "ReLU":ReLU})
 
 with open(input_folder+'results/results.csv', 'w') as file:
-    file.write("BIN/genome,pred_genus_relu,score_genus_relu,red_genus_softmax,score_genus_softmax,pred_species_relu,score_species_relu,pred_species_softmax,score_species_softmax,final_prediction,entropy\n")
+    file.write("BIN/genome,pred_genus_relu,score_genus_relu,Pred_genus_softmax,score_genus_softmax,pred_species_relu,score_species_relu,pred_species_softmax,score_species_softmax,final_prediction,entropy\n")
 
 for i in range(0, len(array)):
     # Genus ReLu
