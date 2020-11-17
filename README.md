@@ -56,7 +56,7 @@ Obs: Some people have been facing issues with newer versions of Prokka. To avoid
 Getting vHULK ready to run is as simple as cloning this Github project or download and extract it to a directory inside your computer:
 
 ```
-git clone https://github.com/LaboratorioBioinformatica/v.HULK
+git clone https://github.com/LaboratorioBioinformatica/vHULK
 ```
 
 ### Quick start
