@@ -49,7 +49,7 @@ conda install -n vHULK -c bioconda numpy pandas scipy biopython tensorflow=2.2.0
 conda activate vHULK
 ```
 
-Obs: Some people have been facing issues with newer versions of Prokka. To avoid such problems, we froze specific version above which we know for sure they work.
+Obs: Some people have been facing issues with newer versions of Prokka. To avoid such problems, we froze the specific versions above which we know for sure they work with vHULK.
 
 ### Installing
 
