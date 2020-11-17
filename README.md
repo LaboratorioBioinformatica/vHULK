@@ -39,7 +39,7 @@ These Python libraries are required:
 * [Biopython](http://biopython.org/) - Handling biological sequences
 * [Tensorflow](https://www.tensorflow.org/) - Google's Deep Neural Networks libraries 
 
-To install these dependencies, there are usually two ways: pip or [conda](https://www.anaconda.com/products/individual).  
+To install these dependencies, there are usually two ways: [pip](https://pypi.org/project/pip/) or [conda](https://www.anaconda.com/products/individual).  
 We strongly recomend the creation of a specific conda environment containing the installed libraries and tools. In this way, everything will be set with the following commands:
 
 ```
