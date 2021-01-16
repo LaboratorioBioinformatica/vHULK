@@ -86,48 +86,37 @@ def parse_arguments():
 
 	return parser.parse_args()
 
-
 # Function declarations
 #Get prefix from bins
-def get_prefix(binn):
-   if re.search(".fasta", binn):
-       prefix = re.sub(".fasta", "", binn)
-   else:
-       prefix = re.sub(".fa", "", binn)
-   return prefix
 
 # Run prokka
-def run_prokka(binn, input_folder, threads):
+def run_prokka(fasta_in, output_dir, threads):
     # Check the fasta format
-    prefix = get_prefix(binn)
+	fasta_suffix = fasta_in.suffix
+	out_prefix = fasta_in.name.rstrip(fasta_suffix)
     # Filehandle where the output of prokka will be saved
     # output_prokka = open(str(prefix)+'prokka.output', mode='w')
     # Full command line for prokka
-    command_line = (
-        "prokka --kingdom Viruses --centre X --compliant --gcode 11 --cpus "
-        + threads
-        + " --force --quiet --prefix prokka_results_"
-        + str(prefix)
-        + " --fast --norrna --notrna --outdir "
-        + input_folder
-        + "results/prokka/"
-        + str(prefix)
-        + " --cdsrnaolap --noanno "
-        + input_folder
-        + str(binn)
-    ).split()
-    return_code = subprocess.call(command_line, stderr=subprocess.PIPE)
+	command_line = (
+		"prokka --kingdom Viruses --centre X --compliant --gcode 11 --cpus "
+		+ str(threads)
+		+ " --force --quiet --prefix prokka_results_"
+		+ out_prefix
+		+ " --fast --norrna --notrna --outdir "
+		+ str(output_dir)
+		+ " --cdsrnaolap --noanno "
+		+ str(fasta_in)
+		).split()
+	print(command_line)
+    #return_code = subprocess.call(command_line, stderr=subprocess.PIPE)
+	return_code = 0
     # Check with prokka run smothly
-    if return_code == 1:
-        print("Prokka may not be correctly installed. Please check that.")
-        sys.exit(1)
-
-
+	if return_code == 1:
+		print("Prokka may not be correctly installed. Please check that.")
+		sys.exit(1)
 ####
 #### Main code
 ####
-#
-#
 def main():
 	args = parse_arguments()
 	# Greeting message
@@ -146,6 +135,8 @@ def main():
 	## Important variables
 
 	input_dir = args.input_dir
+	output_dir = args.output_dir
+	models_dir = args.models_dir
 	threads = args.threads
 
 	# Get a list of all input fastas from the dir
@@ -166,40 +157,40 @@ def main():
 		"and found {} genome files.\n".format(len(list_bins))
 			)
 	
-## Create results folder
-#try:
-#    os.stat(input_folder + "results/")
-#except:
-#    os.mkdir(input_folder + "results/")
-#
-#
-######
-## PROKKA
-######
-## Running prokka for all the bins multfasta files in input folder
-## Perform a check in each bin, then call the execute_prokka function individually
-## It may take awhile
-#count_prokka = 0
-#print("**Prokka has started, this may take awhile. Be patient.\n")
-#for binn in list_bins:
-#    # Verify bin/Genome size
-#    len_bin = 0
-#    for record in SeqIO.parse(input_folder + binn, "fasta"):
-#        len_bin += len(record.seq)
-#    # If a bin/genome is too short, skip it
-#    if len_bin < 5000:
-#        print(
-#            "**v.HULK has found a genome or bin, which is too short to code proteins (<5000pb). As CDSs are an import feature for v.HULK, we will be skipping this: "
-#            + binn
-#        )
-#        continue
-#    run_prokka(binn, input_folder, threads)
-#    count_prokka += 1
-#    if count_prokka % 10 == 0:
-#        print("**Done with %d genomes..." % count_prokka)
-#print("**Prokka tasks have finished!\n")
-#
-#
+	# Check output dir and create it if needed
+	if not output_dir.is_dir():
+		output_dir.mkdir(parents=True, exist_ok=True)
+
+	######
+	## PROKKA
+	######
+	count_prokka = 0
+	prokka_skipped = []
+	prokka_dir = output_dir / Path('prokka')
+
+	print("**Prokka has started, this may take awhile. Be patient.\n")
+	for bin_fasta in list_bins:
+		len_bin = 0
+		for record in SeqIO.parse(bin_fasta, "fasta"):
+			len_bin += len(record.seq)
+		if len_bin < 5000:
+			print(
+				"**v.HULK has found a genome or bin, which is too short to "
+				"code proteins (< 5000 bp). As CDSs are an import feature for "
+				"v.HULK, we will be skipping this: "
+				+ bin_fasta.name
+			)
+			prokka_skipped += bin_fasta.name
+			continue
+		run_prokka(bin_fasta, prokka_dir, threads)
+		count_prokka += 1
+		if count_prokka % 10 == 0:
+			print("**Done with {} genomes...".format(count_prokka))
+
+	print("**Successfully run: {}".format(count_prokka))
+	if len(prokka_skipped) != 0:
+		print("**Skipped : {}".format(prokka_skipped))
+
 #####
 ## HMM SEARCHES
 #####
