@@ -108,9 +108,9 @@ def run_prokka(fasta_in, output_dir, threads):
 		+ str(fasta_in)
 		).split()
 	print(command_line)
-    #return_code = subprocess.call(command_line, stderr=subprocess.PIPE)
+	#return_code = subprocess.call(command_line, stderr=subprocess.PIPE)
 	return_code = 0
-    # Check with prokka run smothly
+	# Check with prokka run smothly
 	if return_code == 1:
 		print("Prokka may not be correctly installed. Please check that.")
 		sys.exit(1)
