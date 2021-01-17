@@ -94,6 +94,7 @@ def run_prokka(fasta_in, output_dir, threads):
     # Check the fasta format
 	fasta_suffix = fasta_in.suffix
 	out_prefix = fasta_in.name.rstrip(fasta_suffix)
+	genome_dir = output_dir / Path(out_prefix)
     # Filehandle where the output of prokka will be saved
     # output_prokka = open(str(prefix)+'prokka.output', mode='w')
     # Full command line for prokka
@@ -103,20 +104,58 @@ def run_prokka(fasta_in, output_dir, threads):
 		+ " --force --quiet --prefix prokka_results_"
 		+ out_prefix
 		+ " --fast --norrna --notrna --outdir "
-		+ str(output_dir)
+		+ str(genome_dir)
 		+ " --cdsrnaolap --noanno "
 		+ str(fasta_in)
 		).split()
 	print(command_line)
-	#return_code = subprocess.call(command_line, stderr=subprocess.PIPE)
-	return_code = 0
+	return_code = subprocess.call(command_line, stderr=subprocess.PIPE)
+	#return_code = 0
 	# Check with prokka run smothly
 	if return_code == 1:
 		print("Prokka may not be correctly installed. Please check that.")
 		sys.exit(1)
+
+
+def run_hmmscan(fasta_in, output_dir, models_dir, threads):
+	# Get the base name of the input file
+	prefix = fasta_in.name.rstrip(fasta_in.suffix)
+	basename = prefix.strip('prokka_results_')
+
+	# Construct the filenames and paths
+	## for hmm stdout
+	base_hmm_out = '_'.join([str(basename), "hmmscan.out"])
+	path_hmm_out = output_dir / Path(base_hmm_out)
+
+	## and hmm table output
+	base_hmm_tblout = '_'.join([str(basename), "hmmscan.tbl"])
+	path_hmm_tblout = output_dir / Path(base_hmm_tblout)
+
+	command_line = "hmmscan -o {} --cpu {} --tblout {}--no-ali {} "\
+		"{}".format(path_hmm_out, threads, path_hmm_tblout,
+							models_dir, fasta_in)
+	print(command_line)
+	#    # print(command_line_hmmscan)
+	#    # Use -E 1 for next time running HMMscan or leave the fix down there
+	#    # In case hmmscan returns an error - Added only because it stopped in half
+	#    # if os.path.exists(input_folder + 'results/hmmscan/' + prefix + '_hmmscan.tbl'):
+	#    # 	continue
+	#    try:
+	#        subprocess.call(command_line_hmmscan, shell=True)
+	#        # Comment line above and uncomment line below in case you want to run v.HULK without running hmmscan all over again
+	#        # True
+	#    except:
+	#        print("**Error calling HMMscan:", command_line_hmmscan)
+	#        quit()
+	#    count_hmm += 1
+	#    # Iteration control
+	#    print("**Done with %d bins HMM searches..." % count_hmm)
+
+
 ####
 #### Main code
 ####
+
 def main():
 	args = parse_arguments()
 	# Greeting message
@@ -191,59 +230,42 @@ def main():
 	if len(prokka_skipped) != 0:
 		print("**Skipped : {}".format(prokka_skipped))
 
-#####
-## HMM SEARCHES
-#####
-#print("**" + str(datetime.datetime.now()))
-#print("**Starting HMM scan, this may take awhile. Be patient.\n")
+	#####
+	## HMM SEARCHES
+	#####
+	print("**" + str(datetime.datetime.now()))
+	print("**Starting HMM scan, this may take awhile. Be patient.\n")
 ## print(str(datetime.datetime.now()))
 ## Create a new results folder for hmmscan output
 #try:
 #    os.stat(input_folder + "results/hmmscan/")
 #except:
 #    os.mkdir(input_folder + "results/hmmscan/")
-#
-## Call HMMscan to all genomes
-#dic_matrices_by_genome = {}
-#prop_hmms_hits = {}
-#count_hmm = 0
-#for binn in list_bins:
-#    # Prefix for naming results
-#    prefix = get_prefix(binn)
-#    command_line_hmmscan = (
-#        "hmmscan -o "
-#        + input_folder
-#        + "results/hmmscan/"
-#        + prefix
-#        + "_hmmscan.out --cpu "
-#        + threads
-#        + " --tblout "
-#        + input_folder
-#        + "results/hmmscan/"
-#        + prefix
-#        + "_hmmscan.tbl --noali models/all_vogs_hmm_profiles_feb2018.hmm "
-#        + input_folder
-#        + "results/prokka/"
-#        + prefix
-#        + "/prokka_results_"
-#        + prefix
-#        + ".faa"
-#    )
-#    # print(command_line_hmmscan)
-#    # Use -E 1 for next time running HMMscan or leave the fix down there
-#    # In case hmmscan returns an error - Added only because it stopped in half
-#    # if os.path.exists(input_folder + 'results/hmmscan/' + prefix + '_hmmscan.tbl'):
-#    # 	continue
-#    try:
-#        subprocess.call(command_line_hmmscan, shell=True)
-#        # Comment line above and uncomment line below in case you want to run v.HULK without running hmmscan all over again
-#        # True
-#    except:
-#        print("**Error calling HMMscan:", command_line_hmmscan)
-#        quit()
-#    count_hmm += 1
-#    # Iteration control
-#    print("**Done with %d bins HMM searches..." % count_hmm)
+
+	hmmscan_dir = output_dir / Path("hmmscan")
+	if not hmmscan_dir.is_dir():
+		hmmscan_dir.mkdir(parents=True, exist_ok=True)
+	
+	# Filter out empty protein faas
+	# This might occur when prokka doesn't call any genes
+	# TO DO
+	# Check with prokka if this is desired behavior
+	valid_faas, skipped_faas = [], []
+	for faa in prokka_dir.glob("**/*.faa"):
+		if faa.stat().st_size != 0:
+			valid_faas.append(faa)
+		else:
+			skipped_faas.append(faa)
+
+	hmms = models_dir / Path("all_vogs_hmm_profiles_feb2018.hmm")
+	for faa in valid_faas:
+		run_hmmscan(faa, hmmscan_dir, hmms, threads)
+	## Call HMMscan to all genomes
+	#dic_matrices_by_genome = {}
+	#prop_hmms_hits = {}
+	#count_hmm = 0
+
+	
 #    ## Create dictionary as ref of collumns - pVOGs
 #    dic_vogs_headers = {}
 #    with open("files/VOGs_header.txt", "r") as file2:
