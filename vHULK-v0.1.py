@@ -257,9 +257,8 @@ def main():
 		else:
 			skipped_faas.append(faa)
 
-	hmms = models_dir / Path("all_vogs_hmm_profiles_feb2018.hmm")
 	for faa in valid_faas:
-		run_hmmscan(faa, hmmscan_dir, hmms, threads)
+		run_hmmscan(faa, hmmscan_dir, vog_profiles, threads)
 	## Call HMMscan to all genomes
 	#dic_matrices_by_genome = {}
 	#prop_hmms_hits = {}
