@@ -82,6 +82,15 @@ def parse_arguments():
 		help="Path to directory where all models are stored."
 		)
 	
+	optionalArgs.add_argument(
+		"-f",
+		"--files-dir",
+		required=False,
+		dest="files_dir",
+		default=Path("./files").resolve(),
+		help="Files directory provided with vHULK"
+		)
+
 	parser._action_groups.append(optionalArgs)
 
 	return parser.parse_args()
@@ -98,23 +107,13 @@ def run_prokka(fasta_in, output_dir, threads):
     # Filehandle where the output of prokka will be saved
     # output_prokka = open(str(prefix)+'prokka.output', mode='w')
     # Full command line for prokka
-	command_line = (
-		"prokka --kingdom Viruses --centre X --compliant --gcode 11 --cpus "
-		+ str(threads)
-		+ " --force --quiet --prefix prokka_results_"
-		+ out_prefix
-		+ " --fast --norrna --notrna --outdir "
-		+ str(genome_dir)
-		+ " --cdsrnaolap --noanno "
-		+ str(fasta_in)
-		).split()
-	print(command_line)
-	return_code = subprocess.call(command_line, stderr=subprocess.PIPE)
-	#return_code = 0
-	# Check with prokka run smothly
-	if return_code == 1:
-		print("Prokka may not be correctly installed. Please check that.")
-		sys.exit(1)
+	command_line = "prokka --kingdom Viruses --centre X --compliant "\
+		"--gcode 11 --cpus {} --force --quiet --prefix prokka_results_{} "\
+		"--fast --norrna --notrna --outdir {} "\
+		"--cdsrnaolap --noanno {}".format(threads, out_prefix, genome_dir,
+									fasta_in)
+
+	subprocess.run(command_line, shell=True)
 
 
 def run_hmmscan(fasta_in, output_dir, models_dir, threads):
@@ -131,10 +130,12 @@ def run_hmmscan(fasta_in, output_dir, models_dir, threads):
 	base_hmm_tblout = '_'.join([str(basename), "hmmscan.tbl"])
 	path_hmm_tblout = output_dir / Path(base_hmm_tblout)
 
-	command_line = "hmmscan -o {} --cpu {} --tblout {}--no-ali {} "\
+	command_line = "hmmscan -o {} --cpu {} --tblout {} --noali {} "\
 		"{}".format(path_hmm_out, threads, path_hmm_tblout,
 							models_dir, fasta_in)
-	print(command_line)
+
+	subprocess.run(command_line, shell=True)
+
 	#    # print(command_line_hmmscan)
 	#    # Use -E 1 for next time running HMMscan or leave the fix down there
 	#    # In case hmmscan returns an error - Added only because it stopped in half
@@ -151,7 +152,32 @@ def run_hmmscan(fasta_in, output_dir, models_dir, threads):
 	#    # Iteration control
 	#    print("**Done with %d bins HMM searches..." % count_hmm)
 
+def construct_gene_scores_matrix(hmmtable):
+	dic_genes_scores = {}
+	with open(hmmtable, 'r') as hmmout:
+		for line in hmmout:
+			vog = ""
+			gene = ""
+			evalue = np.float32(0.0)
+			score = np.float32(0.0)
+			bias = np.float32(0.0)
+			if re.match("^VOG", line):
+				matches = re.match(
+					"^(VOG[\d\w]+)\s+-\s+([^\s]+)[^\d]+([^\s]+)\s+([^\s]+)\s+([^\s]+)",
+					line,
+				)
+				vog = matches[1]
+				gene = matches[2]
+				evalue = float(matches[3])
+				score = float(matches[4])
+				bias = float(matches[5])
+				if gene in dic_genes_scores:
+					dic_genes_scores[gene].append([vog, evalue, score, bias])
+				else:
+					dic_genes_scores[gene] = [[vog, evalue, score, bias]]
 
+	return dic_genes_scores
+		
 ####
 #### Main code
 ####
@@ -160,7 +186,8 @@ def main():
 	args = parse_arguments()
 	# Greeting message
 	print("\n**Welcome v.HULK, a toolkit for phage host prediction!\n")
-
+	now = datetime.datetime.now()
+	print(now.strftime('**%Y-%m-%d %H:%M:%S'))
 	# Verify databases
 	vog_profiles = args.models_dir/ Path("all_vogs_hmm_profiles_feb2018.hmm")
 	
@@ -176,7 +203,9 @@ def main():
 	input_dir = args.input_dir
 	output_dir = args.output_dir
 	models_dir = args.models_dir
+	files_dir = args.files_dir
 	threads = args.threads
+
 
 	# Get a list of all input fastas from the dir
 	list_bins = []
@@ -206,8 +235,8 @@ def main():
 	count_prokka = 0
 	prokka_skipped = []
 	prokka_dir = output_dir / Path('prokka')
-
-	print("**Prokka has started, this may take awhile. Be patient.\n")
+	
+	print("**Prokka has started, this may take a while. Be patient.\n")
 	for bin_fasta in list_bins:
 		len_bin = 0
 		for record in SeqIO.parse(bin_fasta, "fasta"):
@@ -219,28 +248,27 @@ def main():
 				"v.HULK, we will be skipping this: "
 				+ bin_fasta.name
 			)
-			prokka_skipped += bin_fasta.name
+			prokka_skipped.append(bin_fasta.name)
 			continue
+
 		run_prokka(bin_fasta, prokka_dir, threads)
+
 		count_prokka += 1
 		if count_prokka % 10 == 0:
 			print("**Done with {} genomes...".format(count_prokka))
 
-	print("**Successfully run: {}".format(count_prokka))
-	if len(prokka_skipped) != 0:
-		print("**Skipped : {}".format(prokka_skipped))
 
+	print("**Successfully run: {}".format(count_prokka))
+
+	if len(prokka_skipped) != 0:
+		print("**Skipped : {}".format(len(prokka_skipped)))
+
+	now = datetime.datetime.now()
+	print(now.strftime('**%Y-%m-%d %H:%M:%S'))
 	#####
 	## HMM SEARCHES
 	#####
-	print("**" + str(datetime.datetime.now()))
 	print("**Starting HMM scan, this may take awhile. Be patient.\n")
-## print(str(datetime.datetime.now()))
-## Create a new results folder for hmmscan output
-#try:
-#    os.stat(input_folder + "results/hmmscan/")
-#except:
-#    os.mkdir(input_folder + "results/hmmscan/")
 
 	hmmscan_dir = output_dir / Path("hmmscan")
 	if not hmmscan_dir.is_dir():
@@ -250,28 +278,43 @@ def main():
 	# This might occur when prokka doesn't call any genes
 	# TO DO
 	# Check with prokka if this is desired behavior
-	valid_faas, skipped_faas = [], []
+	valid_faas, skipped_faas = {}, {}
 	for faa in prokka_dir.glob("**/*.faa"):
+		suffix = faa.suffix
+		bin_name = faa.name.strip(suffix).lstrip("prokka_results_")
 		if faa.stat().st_size != 0:
-			valid_faas.append(faa)
+			valid_faas[bin_name] = faa
 		else:
-			skipped_faas.append(faa)
+			skipped_faas[bin_name] = faa
 
-	for faa in valid_faas:
+	count_hmms = 0
+	for faa in valid_faas.values():
 		run_hmmscan(faa, hmmscan_dir, vog_profiles, threads)
-	## Call HMMscan to all genomes
-	#dic_matrices_by_genome = {}
-	#prop_hmms_hits = {}
-	#count_hmm = 0
-
+		count_hmms += 1
+		print("**Done with {} / {} HMMs\r".format(count_hmms, len(valid_faas)))
+	print("**Done with HMMscan!")
 	
-#    ## Create dictionary as ref of collumns - pVOGs
+	now = datetime.datetime.now()
+	print(now.strftime('**%Y-%m-%d %H:%M:%S'))
+
+#    ## Create dictionary as ref of columns - pVOGs
 #    dic_vogs_headers = {}
 #    with open("files/VOGs_header.txt", "r") as file2:
 #        for line2 in file2:
 #            key = re.match("(.+)\n", line2).group(1)
 #            dic_vogs_headers[key] = np.float32(0.0)
-#    #
+	# Initialize a dictionary that holds some info
+	dic_vogs_headers = {}
+	headers_fp = files_dir / Path("VOGs_header.txt")
+	with open(headers_fp, 'r') as fin:
+		for line in fin:
+			vog = line.rstrip()
+			dic_vogs_headers[vog] = np.float32(0.0)
+
+	## Call HMMscan to all genomes
+	#prop_hmms_hits = {}
+	#count_hmm = 0
+
 #    # Parse hmmscan results by gene
 #    num_proteins_bin = 0
 #    with open(
@@ -289,32 +332,47 @@ def main():
 #                # Get gene name here
 #                gene_name = re.search("^>(.*)", line).group(1)
 #    dic_matches = {}
+	print("**Parsing HMM results")
+	# PARSE HMM RESULTS
+	dic_matrices_by_genome = {}
+	for entry in valid_faas:
+		hmmtbl_str = '_'.join([entry, 'hmmscan.tbl'])
+		hmmtable = hmmscan_dir / Path(hmmtbl_str)
+		gene_scores = construct_gene_scores_matrix(hmmtable)
+		dic_matrices_by_genome[entry] = pd.DataFrame(index = gene_scores.keys(),
+columns=dic_vogs_headers.keys(),
+dtype=float)
+
+		dic_matrices_by_genome[entry].fillna(value=np.float32(0.0), 
+											inplace=True)
+		for gene in gene_scores:
+			for each_match in gene_scores[gene]:
+				if each_match[1] > 1:
+					each_match[1] = 1
+				dic_matrices_by_genome[entry][each_match[0]][gene] = \
+					np.float32(1.0 - np.float32(each_match[1]))
+
+
+	list_condensed_matrices = []
+	list_file_names = []
+	for matrix in dic_matrices_by_genome:
+		temp = list(dic_matrices_by_genome[matrix].sum(axis=0, skipna=True))
+		list_file_names.append(matrix)
+		list_condensed_matrices.append(temp)
+
+	mat_array = np.array(list_condensed_matrices)
+	print(mat_array)
+	print(list_file_names)
+	
+
+if __name__ == '__main__':
+	main()
 #
 #    # Parse hmmout
 #    with open(
 #        input_folder + "results/hmmscan/" + prefix + "_hmmscan.tbl", "r"
 #    ) as hmmscan_out:
 #        dic_genes_scores = {}
-#        for line in hmmscan_out:
-#            vog = ""
-#            gene = ""
-#            evalue = np.float32(0.0)
-#            score = np.float32(0.0)
-#            bias = np.float32(0.0)
-#            if re.match("^VOG", line):
-#                matches = re.match(
-#                    "^(VOG[\d\w]+)\s+-\s+([^\s]+)[^\d]+([^\s]+)\s+([^\s]+)\s+([^\s]+)",
-#                    line,
-#                )
-#                vog = matches[1]
-#                gene = matches[2]
-#                evalue = float(matches[3])
-#                score = float(matches[4])
-#                bias = float(matches[5])
-#                if gene in dic_genes_scores:
-#                    dic_genes_scores[gene].append([vog, evalue, score, bias])
-#                else:
-#                    dic_genes_scores[gene] = [[vog, evalue, score, bias]]
 #                # Here goes the continuation
 #    # Create a matrix by accession
 #    dic_matrices_by_genome[prefix] = pd.DataFrame(
@@ -358,7 +416,8 @@ def main():
 ## import numpy as np
 #array = np.array(list_condensed_matrices)
 ## print("ARRAY-SHAPE: ", len(array))
-#
+
+
 ####
 ## Predictions
 ####
@@ -526,5 +585,3 @@ def main():
 #print(
 #    '\n**Deep learning predictions have finished. Results are in file "results.csv" inside input_folder/results/.\n**Thank you for using v.HULK'
 #)
-if __name__ == '__main__':
-	main()
