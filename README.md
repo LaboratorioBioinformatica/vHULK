@@ -13,7 +13,7 @@ as the original manuscript is under review.
 
 ## Phage Host Prediction using high level features and neural networks
 
-Metagenomics and sequencing techiniques have greatly improved in these last 
+Metagenomics and sequencing techniques have greatly improved in these last 
 five years and, as a consequence, the amount of data from microbial communities
 is astronomic. An import part of the microbial community are phages, which have
 their own ecological roles in the environment. Besides that, they have also 
@@ -67,7 +67,7 @@ dependencies.
 * [Prokka](https://github.com/tseemann/prokka) - Rapid Prokaryotic genome annotation.
 * [HMMER Tools](http://www.hmmer.org/) - Biosequence analysis using profile hidden Markov models
 
-These Python libraries are required:
+These python libraries are required:
 
 * [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), 
 * [Scipy](https://www.scipy.org/) - Efficiently handling arrays and scientific computing for Python
@@ -77,7 +77,7 @@ These Python libraries are required:
 To install these dependencies, there are usually two ways: 
 [pip](https://pypi.org/project/pip/) or 
 [conda](https://www.anaconda.com/products/individual).  
-We strongly recomend the creation of a specific conda environment containing 
+We strongly recommend the creation of a specific conda environment containing 
 the installed libraries and tools. In this way, everything will be set with the
 following commands:
 
@@ -120,7 +120,7 @@ data dependencies required for vHULK to run.
 
 This is required only once and it is simple. Just run:
 ```
-$ python download_and_set_models.py
+(vHULK)$ python download_and_set_models.py
 ```
 This will create a new directory called `models`, which stores all necessary 
 data. You can move the whole directory in a location of your preference and
@@ -137,7 +137,7 @@ The `vHULK.py` is an executable script. Its location can be included in your
 For example, assuming you have cloned this repo in `/home/user/tools/vHULK`,
 you can prepend this location to `$PATH`
 ```
-$ export PATH=`/home/user/tools/vHULK:$PATH`
+$ export PATH="/home/user/tools/vHULK:$PATH"
 ```
 
 This allows you to invoke `vHULK.py` from any location on your system.
@@ -147,9 +147,9 @@ Alternatively, all invocations must point to its full location e.g.
 $ /full/path/to/vHULK.py -h
 ```
 
-Here, it is assumed that you included it in your `$PATH`.
+Here, it is assumed tha it is available in your `$PATH`.
 
-To list all options available with vHULK
+To list all options available run
 ```
 (vHULK)$ vHULK.py -h
 usage: vHULK.py [-h] -i INPUT_DIR -o OUTPUT_DIR [-t THREADS] [-m MODELS_DIR]
@@ -190,18 +190,19 @@ viral and bacterial genomes.
 To try these examples, run:
 
 ```
-(vhulk)$ vHULK.py -i test_input -o test_output -t 4
+(vHULK)$ vHULK.py -i test_input -o test_output -t 4
 ```
 
 It should take about 2 minutes to generate your nice and accurate predictions.
 
 ## Input
 
-vHULK is ready to accept whole or partial phage genomes. Just keep in mind that vHULK's 
+vHULK is ready to accept whole or partial phage genomes. Keep in mind that vHULK's 
 predictions are based in high level annotated features, i.e., features that 
 depend on gene annotation. So, very small contigs with few or no entire genes 
 will not provide features for vHULK to work with. In general, if you have a 
-partial genome larger than 10 kbp you should be fine.
+partial genome larger than 10 kbp you should be fine. Currently, vHULK skips 
+all genomes or bins that are smaller than 5000bp at runtime.
 
 Only FASTA nucleotide files are accepted, and vHULK will understand each 
 individual file as one phage genome. Therefore, single-sequence FASTA files 
