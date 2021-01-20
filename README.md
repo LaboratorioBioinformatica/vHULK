@@ -110,7 +110,7 @@ Getting vHULK ready to run is as simple as cloning this Github project or
 download and extract it to a directory inside your computer:
 
 ```
-git clone https://github.com/LaboratorioBioinformatica/vHULK
+$ git clone https://github.com/LaboratorioBioinformatica/vHULK
 ```
 
 ### Download models
@@ -144,7 +144,7 @@ This allows you to invoke `vHULK.py` from any location on your system.
 
 Alternatively, all invocations must point to its full location e.g. 
 ```
-$ /full/path/to/vHULK.py -h
+(vHULK)$ /full/path/to/vHULK.py -h
 ```
 
 Here, it is assumed tha it is available in your `$PATH`.
