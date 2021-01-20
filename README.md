@@ -78,11 +78,16 @@ To install these dependencies, there are usually two ways:
 [pip](https://pypi.org/project/pip/) or 
 [conda](https://www.anaconda.com/products/individual).  
 We strongly recommend the creation of a specific conda environment containing 
-the installed libraries and tools. In this way, everything will be set with the
-following commands:
+the installed libraries and tools.
 
 > The `$` signifies the command-line prompt
 
+You can use the `vhulk.yml` file to create a new isolated environment
+```
+$ conda env create -n vHULK -f vhulk.yml
+```
+
+or install all requirements manually
 ```
 $ conda create -n vHULK -c biobuilds perl=5.22 python=3.6
 $ conda install -n vHULK -c bioconda prokka hmmer
