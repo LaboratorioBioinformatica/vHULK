@@ -32,6 +32,21 @@ from tensorflow.keras.layers import Dense, Activation, LeakyReLU, ReLU
 from tensorflow.keras.models import load_model
 from scipy.special import entr
 
+## REQUIRED FILES
+# models
+MODEL_FILES = ["model_genus_total_fixed_relu_08mar_2020.h5",
+                "model_species_total_fixed_relu_08mar_2020.h5",
+                "model_genus_total_fixed_softmax_01mar_2020.h5",
+                "model_species_total_fixed_softmax_01mar_2020.h5"
+                ]
+# vogs hmms
+VOG_PROFILES = "all_vogs_hmm_profiles_feb2018.hmm"
+
+# host annotation
+HOST_FILES = ["list_hosts_genus.txt",
+                "list_hosts_species.txt",
+                "VOGs_header.txt"
+                ]
 
 def parse_arguments():
 
@@ -93,51 +108,100 @@ def parse_arguments():
         help="Files directory provided with vHULK",
     )
 
+    optionalArgs.add_argument(
+        "--all",
+        required=False,
+        dest="write_all",
+        action="store_true",
+        help="Write predictions for all input bins/genomes, even if they "
+        "were skipped (size filtered or hmmscan failed)"
+    )
+
     parser._action_groups.append(optionalArgs)
 
     return parser.parse_args()
 
 
-# Function declarations
-# Get prefix from bins
+def get_bin_name(fasta_p):
+    """
+    Strip relevant pre and suffixes from a given fasta name
 
-# Run prokka
+    Arguments:
+        fasta_p: pathlib.Path instance: The path to the fasta file
+    Return:
+        bin_name: str: The name of the bin as string
+    """
+    bin_name = fasta_p.name
+    fa_suffix = fasta_p.suffix
+    prokka_prefix = "prokka_results_"
+    # Check if it is prefixed with prokka_results
+    if bin_name.startswith(prokka_prefix):
+        bin_name = fasta_p.name.replace(prokka_prefix, '')
+    # Remove the .fa[a|sta] suffix
+    bin_name = bin_name.replace(fa_suffix, '')
+    return bin_name
+
+
 def run_prokka(fasta_in, output_dir, threads):
-    # Check the fasta format
-    fasta_suffix = fasta_in.suffix
-    out_prefix = fasta_in.name.replace(fasta_suffix, "")
+    """
+    Run prokka for a given fasta file.
+
+    Raises CalledProcessError if command doesn't end succesfully
+
+    Arguments:
+        fasta_in: pathlib.Path instance: Path to fasta file
+        output_dir: pathlib.Path instance: Path to directory where results will
+            be stored
+        threads: int: Number of cpus/threads for prokka to use
+    Return:
+        -
+    """
+    out_prefix = get_bin_name(fasta_in)
     genome_dir = output_dir / Path(out_prefix)
-    # Filehandle where the output of prokka will be saved
-    # output_prokka = open(str(prefix)+'prokka.output', mode='w')
-    # Full command line for prokka
     command_line = (
         "prokka --kingdom Viruses --centre X --compliant "
         "--gcode 11 --cpus {} --force --quiet --prefix prokka_results_{} "
         "--fast --norrna --notrna --outdir {} "
         "--cdsrnaolap --noanno {}".format(threads, out_prefix, genome_dir, fasta_in)
     )
-
     return_code = subprocess.run(command_line, shell=True)
 
     return_code.check_returncode()
 
 
-def run_hmmscan(fasta_in, output_dir, models_dir, threads):
-    # Get the base name of the input file
-    prefix = fasta_in.name.replace(fasta_in.suffix, "")
-    basename = prefix.replace("prokka_results_", "")
+def run_hmmscan(fasta_in, output_dir, vogs_hmms, threads):
+    """
+    Run hmmscan for a given fasta file
 
+    Produces <prefix>_hmmscan.out and <prefix>_hmmscan.tbl.
+    <prefix> is based on the name of the given file.
+    If hmmscan runs successfully results are stored in the specified
+    output_directory.
+    Raises CalledProcessError if the command did not run successfully
+
+    Arguments:
+        fasta_in: pathlib.Path instance: Path to fasta file
+        output_dir: pathlib.Path instance: Path to output directory where the
+            two files will be written
+        vogs_hmms: pathlib.Path instance: Path to 
+            all_vogs_hmm_profiles_feb2018.hmm
+        threads: int: Number of threads for hmmscan
+
+    Return:
+        -
+    """
+    bin_name = get_bin_name(fasta_in)
     # Construct the filenames and paths
     ## for hmm stdout
-    base_hmm_out = "_".join([str(basename), "hmmscan.out"])
+    base_hmm_out = "_".join([bin_name, "hmmscan.out"])
     path_hmm_out = output_dir / Path(base_hmm_out)
 
     ## and hmm table output
-    base_hmm_tblout = "_".join([str(basename), "hmmscan.tbl"])
+    base_hmm_tblout = "_".join([bin_name, "hmmscan.tbl"])
     path_hmm_tblout = output_dir / Path(base_hmm_tblout)
 
     command_line = "hmmscan -o {} --cpu {} --tblout {} --noali {} " "{}".format(
-        path_hmm_out, threads, path_hmm_tblout, models_dir, fasta_in
+        path_hmm_out, threads, path_hmm_tblout, vogs_hmms, fasta_in
     )
 
     return_code = subprocess.run(command_line, shell=True)
@@ -146,6 +210,22 @@ def run_hmmscan(fasta_in, output_dir, models_dir, threads):
 
 
 def construct_gene_scores_matrix(hmmtable):
+    """
+    Parse hmmscan tabular output to a dictionary.
+    Arguments:
+        hmmtable: pathlib.Path instance: Path to the hmmscan output, specified
+            with hmmscan's --tblout option. Can also be str.
+    Return:
+        dic_genes_scores: dict: A dictionary with the gene ids as keys with 
+            a list of lists for all its hits. This is of the form
+            { gene_id: [
+                [ hit id, (<- string) 
+                  hit E-value, (<- np.float32)
+                  hit bit-score, (<-np.float32)
+                  hit bias, (<-np.float32)
+                  ], ...], 
+                  ...}
+    """
     dic_genes_scores = {}
     for gene in SearchIO.parse(hmmtable, "hmmer3-tab"):
         dic_genes_scores[gene.id] = []
@@ -161,6 +241,9 @@ def construct_gene_scores_matrix(hmmtable):
 
 
 def predict_genus_relu(sliced_array, relu_genus_model, genus_hosts):
+    """
+    Predict genus based on the genus ReLU model
+    """
     pred_genus_relu = relu_genus_model.predict(sliced_array)
     idx_pred_genus_relu = np.argmax(pred_genus_relu)
     if not pred_genus_relu.any():
@@ -174,6 +257,9 @@ def predict_genus_relu(sliced_array, relu_genus_model, genus_hosts):
 
 
 def predict_genus_softmax(sliced_array, softmax_genus_model, genus_hosts):
+    """
+    Predict genus based on the genus softmax model
+    """
     pred_genus_sm = softmax_genus_model.predict(sliced_array)
     # Calculate entropy
     entropy_genus_sm = entr(pred_genus_sm).sum(axis=1)
@@ -191,6 +277,9 @@ def predict_genus_softmax(sliced_array, softmax_genus_model, genus_hosts):
 
 
 def predict_species_relu(sliced_array, relu_species_model, species_hosts):
+    """
+    Predict species based on the species ReLU model
+    """
     pred_species_relu = relu_species_model.predict(sliced_array)
     idx_pred_species_relu = np.argmax(pred_species_relu)
     if not pred_species_relu.any():
@@ -204,6 +293,9 @@ def predict_species_relu(sliced_array, relu_species_model, species_hosts):
 
 
 def predict_species_softmax(sliced_array, softmax_species_model, species_hosts):
+    """
+    Predict species based on the species softmax model
+    """
     pred_species_sm = softmax_species_model.predict(sliced_array)
     idx_pred_species_sm = np.argmax(pred_species_sm)
     if not pred_species_sm.any():
@@ -226,6 +318,9 @@ def predict(
     genus_hosts,
     species_hosts,
 ):
+    """
+    Predict genus and species for all input for all models
+    """
 
     predictions = {}
 
@@ -316,15 +411,6 @@ def main():
     print("\n**Welcome v.HULK, a toolkit for phage host prediction!\n")
     now = datetime.datetime.now()
     print(now.strftime("**%Y-%m-%d %H:%M:%S"))
-    # Verify databases
-    vog_profiles = args.models_dir / Path("all_vogs_hmm_profiles_feb2018.hmm")
-
-    if not vog_profiles.exists():
-        print(
-            "**Your database and models are not set. "
-            "Please, run: python download_and_set_models.py \n"
-        )
-        sys.exit(1)
 
     ## Important variables
 
@@ -333,6 +419,33 @@ def main():
     models_dir = args.models_dir
     files_dir = args.files_dir
     threads = args.threads
+
+    # Verify databases
+    requirements_ok = False
+    while requirements_ok == False:
+        for m in MODEL_FILES:
+            model_path = models_dir / Path(m)
+            if not model_path.exists():
+                print("Missing {} from models dir".format(model_path, models_dir))
+                sys.exit(1)
+
+        vog_profiles = models_dir / Path(VOG_PROFILES) 
+        if not vog_profiles.exists():
+            print("Missing {} from {}".format(vog_profiles, files_dir))
+            sys.exit(1)
+
+        for h in HOST_FILES:
+            txt_fp = files_dir / Path(h)
+            if not txt_fp.exists():
+                print("Missing {} from {}".format(txt_fp, files_dir))
+                sys.exit(1)
+
+        requirements_ok = True
+        if not requirements_ok:
+            print(
+            "**Please run `python download_and_set_models.py` to make "
+            "sure you have all input data required for v.HULK"
+            )
 
     # Get a list of all input fastas from the dir
     list_bins = []
@@ -359,16 +472,18 @@ def main():
     if not output_dir.is_dir():
         output_dir.mkdir(parents=True, exist_ok=True)
 
-    ######
-    ## PROKKA
-    ######
+    ######i#####
+    ## PROKKA ##
+    ############
     count_prokka = 0
-    prokka_skipped = []
+    prokka_skipped = {}
     prokka_dir = output_dir / Path("prokka")
 
     print("**Prokka has started, this may take a while. Be patient.\n")
+
     for bin_fasta in list_bins:
         len_bin = 0
+        bin_name = get_bin_name(bin_fasta)
         for record in SeqIO.parse(bin_fasta, "fasta"):
             len_bin += len(record.seq)
         if len_bin < 5000:
@@ -377,7 +492,7 @@ def main():
                 "code proteins (< 5000 bp). As CDSs are an import feature for "
                 "v.HULK, we will be skipping this: " + bin_fasta.name
             )
-            prokka_skipped.append(bin_fasta.name)
+            prokka_skipped[bin_name] = bin_fasta
             continue
 
         run_prokka(bin_fasta, prokka_dir, threads)
@@ -393,9 +508,11 @@ def main():
 
     now = datetime.datetime.now()
     print(now.strftime("**%Y-%m-%d %H:%M:%S"))
-    #####
-    ## HMM SEARCHES
-    #####
+
+
+    ##################
+    ## HMM SEARCHES ##
+    ##################
 
     print("**Starting HMM scan, this may take awhile. Be patient.\n")
 
@@ -409,8 +526,7 @@ def main():
     # Check with prokka if this is desired behavior
     valid_faas, skipped_faas = {}, {}
     for faa in prokka_dir.glob("**/*.faa"):
-        suffix = faa.suffix
-        bin_name = faa.name.replace(suffix, "").replace("prokka_results_", "")
+        bin_name = get_bin_name(faa)
         if faa.stat().st_size != 0:
             valid_faas[bin_name] = faa
         else:
@@ -465,10 +581,9 @@ def main():
     mat_array = np.array(list_condensed_matrices)
 
     #################
-    ## Predictions ##
+    ## PREDICTIONS ##
     #################
     print("**Starting deep learning predictions")
-    print("**Loading models...")
 
     # genus relu
     genus_relu_h5 = models_dir / Path("model_genus_total_fixed_relu_08mar_2020.h5")
@@ -517,9 +632,26 @@ def main():
 
     # Put it in a dataframe and write it
     results_df = pd.DataFrame.from_dict(a, orient="index")
+
+    if args.write_all:
+        if len(prokka_skipped) != 0 or len(skipped_faas) != 0:
+            bins_skipped = set(prokka_skipped.keys()).union(set(skipped_faas.keys()))
+            rows = []
+            for bin_name in bins_skipped:
+                row = []
+                for c in results_df.columns:
+                    if "score" in c or c == "entropy":
+                        row.append(np.float32(0.0))
+                    else:
+                        row.append("None")
+                rows.append(row)
+            skipped_df = pd.DataFrame(rows, index=bins_skipped,
+                columns =  results_df.columns)
+
+            results_df = results_df.append(skipped_df)
+
     results_csv = output_dir / Path("results.csv")
     results_df.to_csv(results_csv, index_label="BIN/genome")
-
     print(
         "\n**Deep learning predictions have finished. "
         "Results are in file {}.\n"
