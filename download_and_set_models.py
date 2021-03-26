@@ -38,16 +38,5 @@ if not os.path.isfile('models/all_vogs_hmm_profiles_feb2018.hmm.h3m'):
     print('Database is all set!\n')
 else:
     print('HMM Database is already set.\n')
-# Verify and download deeplearn models
-if not os.path.isfile('models/model_genus_total_fixed_softmax_01mar_2020.h5'):
-    print('Downloading deep learn models. Do not worry, that will take a couple of minutes and is executed only once...\n')
-    os.system('wget http://projetos.lbi.iq.usp.br/phaghost/vHULK/models/models_vHULK_Mar2020.tar.gz')
-    if subprocess.call('tar -xzf models_vHULK_Mar2020.tar.gz -C models/', shell=True) == 1:
-        print('Error extracting models\n')
-        quit()
-    subprocess.call('rm models_vHULK_Mar2020.tar.gz', shell=True)
-    print('Finished setting models')
-else:
-    print('Models have already been downloaded')
 
 print('Thank you for using v.HULK.')

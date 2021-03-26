@@ -29,19 +29,27 @@ warnings.simplefilter(action="ignore", category=FutureWarning)
 
 # Deep Learning
 from tensorflow.keras.layers import Dense, Activation, LeakyReLU, ReLU
-from tensorflow.keras.models import load_model
 from scipy.special import entr
+
+### Adicionadas por Bruno em 03/08/2021 para fazer Load dos Modelos
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras import optimizers
+from tensorflow.keras.regularizers import l2
+import tensorflow.keras.utils as utils
+from tensorflow.keras.utils import Sequence
+from tensorflow.keras import optimizers, initializers
+from tensorflow.keras.optimizers import Adam
+###
 
 __version__ = "1.0.0"
 
 ## REQUIRED FILES
 # models
 MODEL_FILES = [
-    "model_genus_total_fixed_relu_08mar_2020.h5",
-    "model_species_total_fixed_relu_08mar_2020.h5",
-    "model_genus_total_fixed_softmax_01mar_2020.h5",
-    "model_species_total_fixed_softmax_01mar_2020.h5",
+    "GenusModel03Mar2021",
+    "SpeciesModel03Mar2021"
 ]
+
 # vogs hmms
 VOG_PROFILES = "all_vogs_hmm_profiles_feb2018.hmm"
 
@@ -281,23 +289,6 @@ def construct_gene_scores_matrix(hmmtable):
             dic_genes_scores[gene.id].append(hit_info)
     return dic_genes_scores
 
-
-def predict_genus_relu(sliced_array, relu_genus_model, genus_hosts):
-    """
-    Predict genus based on the genus ReLU model
-    """
-    pred_genus_relu = relu_genus_model.predict(sliced_array)
-    idx_pred_genus_relu = np.argmax(pred_genus_relu)
-    if not pred_genus_relu.any():
-        name_genus_relu = "None"
-        score_genus_relu = 0
-    else:
-        name_genus_relu = genus_hosts[idx_pred_genus_relu]
-        score_genus_relu = pred_genus_relu[0][idx_pred_genus_relu]
-
-    return name_genus_relu, score_genus_relu
-
-
 def predict_genus_softmax(sliced_array, softmax_genus_model, genus_hosts):
     """
     Predict genus based on the genus softmax model
@@ -317,23 +308,6 @@ def predict_genus_softmax(sliced_array, softmax_genus_model, genus_hosts):
 
     return name_genus_sm, score_genus_sm, entropy_genus_sm[0]
 
-
-def predict_species_relu(sliced_array, relu_species_model, species_hosts):
-    """
-    Predict species based on the species ReLU model
-    """
-    pred_species_relu = relu_species_model.predict(sliced_array)
-    idx_pred_species_relu = np.argmax(pred_species_relu)
-    if not pred_species_relu.any():
-        name_species_relu = "None"
-        score_species_relu = 0
-    else:
-        name_species_relu = species_hosts[idx_pred_species_relu]
-        score_species_relu = pred_species_relu[0][idx_pred_species_relu]
-
-    return name_species_relu, score_species_relu
-
-
 def predict_species_softmax(
     sliced_array, softmax_species_model, species_hosts
 ):
@@ -351,13 +325,10 @@ def predict_species_softmax(
 
     return name_species_sm, score_species_sm
 
-
 def predict(
     scores_array,
     names_array,
-    relu_genus_model,
     softmax_genus_model,
-    relu_species_model,
     softmax_species_model,
     genus_hosts,
     species_hosts,
@@ -371,19 +342,11 @@ def predict(
     for i in range(0, len(scores_array)):
         bin_name = names_array[i]
         bin_array = np.array([scores_array[i]])
-        name_genus_relu, score_genus_relu = predict_genus_relu(
-            bin_array, relu_genus_model, genus_hosts
-        )
-
         (
             name_genus_sm,
             score_genus_sm,
             entropy_genus_sm,
         ) = predict_genus_softmax(bin_array, softmax_genus_model, genus_hosts)
-
-        name_species_relu, score_species_relu = predict_species_relu(
-            bin_array, relu_species_model, species_hosts
-        )
 
         name_species_sm, score_species_sm = predict_species_softmax(
             bin_array, softmax_species_model, species_hosts
@@ -391,45 +354,31 @@ def predict(
 
         # Decision Tree
         final_decision = "None"
-        # Relu sp
-        if score_species_relu > 0.9:
-            final_decision = name_species_relu
         # SM sp
-        if (score_species_sm > 0.6) and (name_species_sm != final_decision):
+        if (score_species_sm > 0.5) and (name_species_sm != final_decision):
             final_decision = name_species_sm
         # Coudn't predict species
         if final_decision == "None":
             # Put here sm sp
-            if score_species_sm > 0.6:
+            if score_species_sm > 0.5:
                 final_decision = name_species_sm
-                # relu genus
-                if score_genus_relu >= 0.7:
-                    final_decision = name_genus_relu
                 # sm genus
                 if (score_genus_sm >= 0.5) and (
                     name_genus_sm != final_decision
                 ):
                     final_decision = name_genus_sm
             else:
-                # relu genus
-                if score_genus_relu >= 0.9:
-                    final_decision = name_genus_relu
                 # sm genus
-                if (score_genus_sm >= 0.4) and (
+                if (score_genus_sm >= 0.5) and (
                     name_genus_sm != final_decision
                 ):
                     final_decision = name_genus_sm
         # Predicted species.
         # Verify if genus is the same
         else:
-            if re.search(name_genus_relu, final_decision) or re.search(
-                name_genus_sm, final_decision
-            ):
+            if re.search(name_genus_sm, final_decision):
                 pass
             else:
-                # relu genus
-                if score_genus_relu >= 0.9:
-                    final_decision = name_genus_relu
                 # sm genus
                 if (score_genus_sm >= 0.5) and (
                     name_genus_sm != final_decision
@@ -437,12 +386,8 @@ def predict(
                     final_decision = name_genus_sm
 
         predictions[bin_name] = {
-            "pred_genus_relu": name_genus_relu,
-            "score_genus_relu": score_genus_relu,
             "pred_genus_softmax": name_genus_sm,
             "score_genus_softmax": score_genus_sm,
-            "pred_species_relu": name_species_relu,
-            "score_species_relu": score_species_relu,
             "pred_species_softmax": name_species_sm,
             "score_species_softmax": score_species_sm,
             "final_prediction": final_decision,
@@ -461,7 +406,7 @@ def main():
     args = parse_arguments()
 
     # Greeting message
-    print("\n**Welcome to v.HULK, a toolkit for phage host prediction!")
+    print("\n**Welcome to vHULK, a toolkit for phage host prediction!")
 
     print_now()
     ## Important variables
@@ -543,9 +488,9 @@ def main():
             len_bin += len(record.seq)
         if len_bin < 5000:
             print(
-                "**v.HULK has found a genome or bin, which is too short to "
+                "**vHULK has found a genome or bin, which is too short to "
                 "code proteins (< 5000 bp). As CDSs are an import feature for "
-                "v.HULK, we will be skipping this: " + bin_fasta.name
+                "vHULK, we will be skipping this: " + bin_fasta.name
             )
             prokka_skipped[bin_name] = bin_fasta
             continue
@@ -656,43 +601,27 @@ def main():
 
     mat_array = np.array(list_condensed_matrices)
     print_now()
+    
     #################
     ## PREDICTIONS ##
     #################
     print("**Starting deep learning predictions")
 
-    # genus relu
-    genus_relu_h5 = models_dir / Path(
-        "model_genus_total_fixed_relu_08mar_2020.h5"
-    )
-
-    model_genus_relu = load_model(
-        str(genus_relu_h5),
-        custom_objects={"LeakyReLU": LeakyReLU, "ReLU": ReLU},
-    )
     # genus softmax
     genus_sm_h5 = models_dir / Path(
-        "model_genus_total_fixed_softmax_01mar_2020.h5"
+        "GenusModel03Mar2021"
     )
 
     model_genus_sm = load_model(
-        str(genus_sm_h5), custom_objects={"LeakyReLU": LeakyReLU, "ReLU": ReLU}
+        str(genus_sm_h5)
     )
-    # species relu
-    species_relu_h5 = models_dir / Path(
-        "model_species_total_fixed_relu_08mar_2020.h5"
-    )
-    model_species_relu = load_model(
-        str(species_relu_h5),
-        custom_objects={"LeakyReLU": LeakyReLU, "ReLU": ReLU},
-    )
+
     # species softmax
     species_sm_h5 = models_dir / Path(
-        "model_species_total_fixed_softmax_01mar_2020.h5"
+        "SpeciesModel03Mar2021"
     )
     model_species_sm = load_model(
-        str(species_sm_h5),
-        custom_objects={"LeakyReLU": LeakyReLU, "ReLU": ReLU},
+        str(species_sm_h5)
     )
     # Read in the hosts lists
     ## Genus hosts
@@ -709,9 +638,7 @@ def main():
     a = predict(
         mat_array,
         bin_names,
-        model_genus_relu,
         model_genus_sm,
-        model_species_relu,
         model_species_sm,
         genus_hosts,
         species_hosts,
@@ -746,7 +673,7 @@ def main():
     print(
         "**Deep learning predictions have finished. "
         "Results are in file {}.\n"
-        "**Thank you for using v.HULK".format(results_csv)
+        "**Thank you for using vHULK".format(results_csv)
     )
 
 
