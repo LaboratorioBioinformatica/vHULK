@@ -11,6 +11,15 @@ A preview of vHULK's publication is available in
 [BioRxiv](https://doi.org/10.1101/2020.12.06.413476) 
 as the original manuscript is under review.
 
+## Release Note March, 27th 2021
+
+We implemented some changes to the tool following suggestions provided by Reviewers. These include:
+* L2 regularization to weights of the Artificial Neural Network
+* Models based on ReLU activation functions were removed
+* Models now are included in this git repository and will be downloaded along with source code (cloning)
+* The decision tree used to make an unified final prediction was simplified
+* Other minor changes
+
 ## Phage Host Prediction using high level features and neural networks
 
 Metagenomics and sequencing techniques have greatly improved in these last 
@@ -23,7 +32,7 @@ in the **Phage therapy** field, and part of this research involves gathering
 knowledge from new phages present in the environment as well as about their 
 relationship with clinical relevant bacterial pathogens.
 
-Having this scenario in mind, we have developed v.HULK. A user-friendly tool 
+Having this scenario in mind, we have developed vHULK. A user-friendly tool 
 for prediction of phage hosts given their complete or partial genome in FASTA 
 format. Our tool outputs an ensemble prediction at the genus or species level 
 based on scores of four different neural network models. Each model was trained
@@ -58,10 +67,10 @@ Auxiliary script:
 ### Dependencies
 
 All scripts from this project were coded in 
-[Python 3.6](https://www.python.org/). So, first of all, make sure you have it
+[Python 3.7](https://www.python.org/). So, first of all, make sure you have it
 installed and updated.
 
-v.HULK's main script (`vHULK.py`) requires `Prokka` and `HMMER` tools as 
+vHULK's main script (`vHULK.py`) requires `Prokka` and `HMMER` tools as 
 dependencies. 
 
 * [Prokka](https://github.com/tseemann/prokka) - Rapid Prokaryotic genome annotation.
@@ -77,36 +86,30 @@ These python libraries are required:
 To install these dependencies, there are usually two ways: 
 [pip](https://pypi.org/project/pip/) or 
 [conda](https://www.anaconda.com/products/individual).  
-We strongly recommend the creation of a specific conda environment containing 
-the installed libraries and tools.
+We strongly recommend creating a specific conda environment containing the installed libraries and tools.
 
 > The `$` signifies the command-line prompt
 
-You can use the `vhulk.yml` file to create a new isolated environment
+Install all requirements using these commands:
 ```
-$ conda env create -n vHULK -f vhulk.yml
-```
-
-or install all requirements manually
-```
-$ conda create -n vHULK -c biobuilds perl=5.22 python=3.6
-$ conda install -n vHULK -c bioconda prokka hmmer
-$ conda install -n vHULK -c bioconda numpy pandas scipy biopython tensorflow=2.2.0
-$ conda activate vHULK  
+$ conda create -n vHULK -c conda-forge -c bioconda -c defaults prokka
+$ conda install -n vHULK -c bioconda hmmer
+$ conda install -n vHULK -c bioconda -c anaconda numpy pandas scipy biopython tensorflow=2.4.1
+$ conda activate vHULK 
 ```
 
 > Note
 >
-> Some people have been facing issues with newer versions of Prokka. 
-> To avoid such problems, we froze the specific versions above which we know 
-> for sure they work with vHULK.
+> Some people have been facing issues with newer versions of Prokka or TensorFlow. 
+> To avoid such problems, we froze a working version with TensorFlow 2.4.1 we know
+> for sure it works with vHULK.
 
 If all went well your command-line prompt will now be prefixed with the 
 environment name you gave above.
 
 ```
 (vHULK)$ python -V
-Python 3.6.12 :: Anaconda, Inc.
+Python 3.7.X
 ```
 
 ## Installation
@@ -127,7 +130,7 @@ This is required only once and it is simple. Just run:
 ```
 (vHULK)$ python download_and_set_models.py
 ```
-This will create a new directory called `models`, which stores all necessary 
+This will download HMM models to a directory called `models`, which stores all necessary 
 data. You can move the whole directory in a location of your preference and
 point to it with the `-m` option of `vHULK.py` when running vHULK. 
 By default, vHULK searches for it in the same path where the executable is 
@@ -226,13 +229,13 @@ Identifiers will be in the first column.
 
 Output example:
 ```
-BIN/genome,pred_genus_relu,score_genus_relu,pred_genus_softmax,score_genus_softmax,pred_species_relu,score_species_relu,pred_species_softmax,score_species_softmax,final_prediction,entropy
-MK801680_BIN_staphylococcus_aureus,Staphylococcus,1.0,Staphylococcus,0.9999988,Staphylococcus_aureus,1.0,Staphylococcus_aureus,0.9999976,Staphylococcus_aureus,1.9657731e-05
-ZC4_test,Mycobacterium,0.31396204,Streptomyces,0.9495423,None,0,Streptomyces_griseus,0.4496213,Streptomyces,0.31331635
-MK570225_enterococcus_faecalis,Enterococcus,1.0,Enterococcus,0.99999917,None,0,Enterococcus_faecalis,0.9999571,Enterococcus_faecalis,1.4299788e-05
-MK524521_mycobacterium_smegmatis,Mycobacterium,1.0,Mycobacterium,1.0,Mycobacterium_smegmatis,1.0,Mycobacterium_smegmatis,1.0,Mycobacterium_smegmatis,1.465061e-11
-MN41915_vibrio_cholerae,None,0,Vibrio,1.0,None,0,Vibrio_cholerae,0.99995685,Vibrio_cholerae,1.9252913e-11
-MN689520_lactococcus_lactis,Lactococcus,1.0,Lactococcus,1.0,Lactococcus_lactis,1.0,Lactococcus_lactis,0.9999994,Lactococcus_lactis,4.9965405e-07
+BIN/genome,pred_genus_softmax,score_genus_softmax,pred_species_softmax,score_species_softmax,final_prediction,entropy
+MK524521_mycobacterium_smegmatis,Mycobacterium,0.9322084188461304,Mycobacterium_smegmatis,0.9966434240341187,Mycobacterium_smegmatis,0.2768826484680176
+MK570225_enterococcus_faecalis,Enterococcus,0.9962823987007141,Enterococcus_faecalis,0.9984235763549805,Enterococcus_faecalis,0.033856652677059174
+MK801680_BIN_staphylococcus_aureus,Staphylococcus,0.9952540397644043,Staphylococcus_aureus,0.9958204030990601,Staphylococcus_aureus,0.040766458958387375
+MN41915_vibrio_cholerae,Vibrio,0.9746623635292053,Vibrio_cholerae,0.9812621474266052,Vibrio_cholerae,0.17507237195968628
+MN689520_lactococcus_lactis,Lactococcus,0.981468915939331,Lactococcus_lactis,0.9516076445579529,Lactococcus_lactis,0.14059613645076752
+ZC4_composting_unknown,Streptomyces,0.8378896713256836,Streptomyces_lividans,0.6341040134429932,Streptomyces_lividans,0.955293595790863
 ```
 
 Note that there is a header in the output file, and it is self explanatory. 
@@ -240,11 +243,11 @@ Note that there is a header in the output file, and it is self explanatory.
 Nonetheless:  
 
 * 1st column: ID of the submitted sequence  
-* 2nd to 9th columns: Host prediction and respective score for each one of the
-four vHULK's internal models  
-* 10th column: Unified host prediction generated by an heuristic decision tree
+* 2nd to 5th columns: Host prediction and respective score for each one of the
+two vHULK's internal models  
+* 6th column: Unified host prediction generated by an heuristic decision tree
 based on score values  
-* 11th column: Entropy value for predictions of the Softmax model at the genus 
+* 7th column: Entropy value for predictions of the Softmax model at the genus 
 level. It can be used as a proxy of confidence for a particular prediction, 
 i.e., values close to 0 correlate with higher accuracies and values close to 4 
 otherwise.
