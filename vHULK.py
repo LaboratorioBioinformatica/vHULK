@@ -560,16 +560,23 @@ def main():
     if not hmmscan_dir.is_dir():
         hmmscan_dir.mkdir(parents=True, exist_ok=True)
 
-    count_hmms = 0
-    for faa in valid_faas.values():
-        run_hmmscan(faa, hmmscan_dir, vog_profiles, threads)
-        count_hmms += 1
-        print(
-            "**Done with {} / {} HMMs\r".format(count_hmms, len(valid_faas)),
-            end="",
-        )
-    else:
-        print("\n**Done with HMMscan!")
+#    count_hmms = 0
+#    for faa in valid_faas.values():
+#        run_hmmscan(faa, hmmscan_dir, vog_profiles, threads)
+#        count_hmms += 1
+#        print(
+#            "**Done with {} / {} HMMs\r".format(count_hmms, len(valid_faas)),
+#            end="",
+#        )
+#    else:
+#        print("\n**Done with HMMscan!")
+
+    count_hmms = len(valid_faas)
+    with multiprocessing.Pool(threads) as p:
+        hmmscan_jobs = list(valid_faas.values())
+        run_wrapper = functools.partial(run_hmmscan, output_dir=hmmscan_dir, vogs_hmms=vog_profiles, threads=1)
+        for _ in tqdm.tqdm(p.imap_unordered(run_wrapper, hmmscan_jobs), total=len(prokka_jobs)):
+            pass
 
     print_now()
 
