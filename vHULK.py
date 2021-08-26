@@ -12,6 +12,9 @@ from Bio import SeqIO, SearchIO
 import re
 import sys
 import os
+import tqdm
+import multiprocessing
+import functools
 
 # Set logging level fro TensorFlow
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -211,7 +214,7 @@ def run_prokka(fasta_in, output_dir, threads):
             threads, out_prefix, genome_dir, fasta_in
         )
     )
-    return_code = subprocess.run(command_line, shell=True)
+    return_code = subprocess.run(command_line, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     return_code.check_returncode()
 
@@ -481,25 +484,35 @@ def main():
 
     print("**Prokka has started, this may take a while. Be patient.")
 
+    prokka_jobs = []
     for bin_fasta in list_bins:
         len_bin = 0
         bin_name = get_bin_name(bin_fasta)
         for record in SeqIO.parse(bin_fasta, "fasta"):
             len_bin += len(record.seq)
         if len_bin < 5000:
-            print(
-                "**vHULK has found a genome or bin, which is too short to "
-                "code proteins (< 5000 bp). As CDSs are an import feature for "
-                "vHULK, we will be skipping this: " + bin_fasta.name
-            )
+#            print(
+#                "**vHULK has found a genome or bin, which is too short to "
+#                "code proteins (< 5000 bp). As CDSs are an import feature for "
+#                "vHULK, we will be skipping this: " + bin_fasta.name
+#            )
             prokka_skipped[bin_name] = bin_fasta
             continue
+        prokka_jobs.append(bin_fasta)
+        #run_prokka(bin_fasta, prokka_dir, threads)
 
-        run_prokka(bin_fasta, prokka_dir, threads)
+#        count_prokka += 1
+#        if count_prokka % 10 == 0:
+#            print("**Done with {} genomes...".format(count_prokka))
 
-        count_prokka += 1
-        if count_prokka % 10 == 0:
-            print("**Done with {} genomes...".format(count_prokka))
+    print('{} short bins were skipped. (bin_len < 5000 bp)'.format(len(prokka_skipped)))
+
+    with multiprocessing.Pool(threads) as p:
+        run_wrapper = functools.partial(run_prokka, output_dir=prokka_dir, threads=1)
+        for _ in tqdm.tqdm(p.imap_unordered(run_wrapper, prokka_jobs), total=len(prokka_jobs)):
+            pass
+
+    count_prokka = len(prokka_jobs)
 
     print("\n**PROKKA finished with no errors")
     print(
