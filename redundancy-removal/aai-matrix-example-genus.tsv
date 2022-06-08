@@ -1,0 +1,10 @@
+#Genome A       Genes in A      Genome B        Genes in B      # orthologous genes     Mean AAI        Std AAI Orthologous fraction (OF)
+NC_018085.1-Bacillus    59      AY007505.3-Streptococcus        57      1       42.55   0.00    1.75
+NC_018085.1-Bacillus    59      JF912400.1-Cronobacter  74      0       0.00    0.00    0.00
+NC_018085.1-Bacillus    59      KY434670.1-Arthrobacter 23      0       0.00    0.00    0.00
+NC_018085.1-Bacillus    59      MH015255.1-Ruegeria     235     0       0.00    0.00    0.00
+NC_018085.1-Bacillus    59      MF158044.1-Shigella     142     0       0.00    0.00    0.00
+NC_018085.1-Bacillus    59      MH371111.1-Microbacterium       25      0       0.00    0.00    0.00
+NC_018085.1-Bacillus    59      MF754112.1-Vibrio       50      0       0.00    0.00    0.00
+NC_018085.1-Bacillus    59      KP793112.1-Lactococcus  53      0       0.00    0.00    0.00
+NC_018085.1-Bacillus    59      JN627160.1-Pseudomonas  301     0       0.00    0.00    0.00

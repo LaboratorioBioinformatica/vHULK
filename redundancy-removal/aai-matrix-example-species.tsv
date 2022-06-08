@@ -1,0 +1,10 @@
+#Genome A       Genes in A      Genome B        Genes in B      # orthologous genes     Mean AAI        Std AAI Orthologous fraction (OF)
+JQ307386.1-Pseudomonas_aeruginosa       54      HM208537.1-Escherichia_coli     79      0       0.00    0.00    0.00
+JQ307386.1-Pseudomonas_aeruginosa       54      KC690136.1-Escherichia_coli     213     0       0.00    0.00    0.00
+JQ307386.1-Pseudomonas_aeruginosa       54      MH651178.1-Mycobacterium_smegmatis      106     0       0.00    0.00    0.00
+JQ307386.1-Pseudomonas_aeruginosa       54      KY514263.1-Pectobacterium_atrosepticum  257     0       0.00    0.00    0.00
+JQ307386.1-Pseudomonas_aeruginosa       54      KR054032.1-Pseudomonas_aeruginosa       91      0       0.00    0.00    0.00
+JQ307386.1-Pseudomonas_aeruginosa       54      NC_022094.1-Bacillus_anthracis  25      0       0.00    0.00    0.00
+JQ307386.1-Pseudomonas_aeruginosa       54      NC_031051.1-Enterococcus_faecalis       61      0       0.00    0.00    0.00
+JQ307386.1-Pseudomonas_aeruginosa       54      NC_024135.1-Mycobacterium_smegmatis     61      0       0.00    0.00    0.00
+JQ307386.1-Pseudomonas_aeruginosa       54      MH926060.1-Mycobacterium_smegmatis      98      0       0.00    0.00    0.0
