@@ -5,11 +5,15 @@ import tensorflow as tf
 physical_devices = tf.config.list_physical_devices()
 print(physical_devices)
 """
-
+#set file for species_redundancynumber or genus_redundancynumber
+#options: genus_70, genus_80, genus_90, species_70, species_80, species_90
 file = 'species_90'
 filename = '../datasets/'+file+'.csv'
+
+#set NDG to True to test with NDG dataset or False to test with 30% of the selected dataset
 NDG = True
 
+#model genus configurations
 if file.split('_')[0] == 'genus':
     drop_rate = 0.35
     layer1 = 1000
@@ -18,7 +22,8 @@ if file.split('_')[0] == 'genus':
     output_activation = 'softmax'
     early_stop_delta=5.0e-3
     batchSize = 50
-    
+
+#model species configurations    
 if file.split('_')[0] == 'species':
     drop_rate = 0.30
     layer1 = 3000
@@ -28,7 +33,6 @@ if file.split('_')[0] == 'species':
     early_stop_delta=5.0e-2
     batchSize = 30
 
-import numpy
 log = 'results.log'
 with open(log, 'w') as f:
     f.write('Layer 1: '+str(layer1)+'\n')
@@ -63,8 +67,6 @@ else:
 from tensorflow.data import Dataset
 train_dataset = Dataset.from_tensor_slices((x_train,y_train)).batch(batchSize,drop_remainder=True)
 val_dataset = Dataset.from_tensor_slices((x_val,y_val)).batch(batchSize,drop_remainder=True)
-with open(log, '+a') as f:
-        f.write('Batch Size: '+str(batchSize)+'\n')
 
 from tensorflow import keras as k
 model = k.Sequential()
