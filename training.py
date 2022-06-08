@@ -5,10 +5,11 @@ import tensorflow as tf
 physical_devices = tf.config.list_physical_devices()
 print(physical_devices)
 """
+
 #set file for species_redundancynumber or genus_redundancynumber
 #options: genus_70, genus_80, genus_90, species_70, species_80, species_90
 file = 'species_90'
-filename = '../datasets/'+file+'.csv'
+filename = './datasets/'+file+'.csv'
 
 #set NDG to True to test with NDG dataset or False to test with 30% of the selected dataset
 NDG = True
@@ -42,7 +43,12 @@ with open(log, 'w') as f:
     f.write('NDG Test: '+str(NDG)+'\n')
 
 from pandas import read_csv    
-x_train = read_csv(filename, header = None)
+try:
+    x_train = read_csv(filename, header = None)
+except FileNotFoundError:
+    print("Datasets not found. Please run python download_and_set_models.py \n")
+    print("Quitting...")
+    quit()
 x_train.drop(x_train.columns[-1], axis=1, inplace=True)
 y_train = x_train.iloc[:, -1].tolist()
 x_train.drop(x_train.columns[-1], axis=1, inplace=True)
@@ -53,7 +59,12 @@ y_train = LB.fit_transform(y_train)
 y_label = LB.classes_
 
 if NDG == True:
-    filename = file.split('_')[0]+'_NDG.csv'
+    try:
+        filename = file.split('_')[0]+'_NDG.csv'
+    except FileNotFoundError:
+        print("Datasets not found. Please run python download_and_set_models.py \n")
+        print("Quitting...")
+        quit()
     x_val = read_csv(filename, header = None)
     x_val.drop(x_val.columns[-1], axis=1, inplace=True)
     y_val = x_val.iloc[:, -1].tolist()
