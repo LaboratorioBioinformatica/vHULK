@@ -10,18 +10,21 @@
 import os
 import subprocess
 
-
-
 # Greeting message
 print('\nYou only need to run this script once!\n')
 
-# Create model directory
-try:
-    os.stat('models/')
-except:
-    os.mkdir('models/')
-
 # Verify and download DBs
+if not os.path.isdir('models'):
+    print('Downloading trained models. Do not worry, that will just take a few minutes and is executed only in the first time... \n')
+    os.system('wget http://projetos.lbi.iq.usp.br/phaghost/vHULK/models/models_Jun_2022.tar.xz')
+    print('Extracting models files...\n')
+    if subprocess.call('tar -xzf models_Jun_2022.tar.xz', shell=True) == 1:
+        print('Error extracting models. Please this script again\n')
+        quit()
+    print('Trained models are all set!\n')
+else:
+    print('Trained models are already set.\n')
+
 if not os.path.isfile('models/all_vogs_hmm_profiles_feb2018.hmm.h3m'):
     print('Downloading flat file database. Do not worry, that will just take a few minutes and is executed only in the first time... \n')
     os.system('wget http://projetos.lbi.iq.usp.br/phaghost/vHULK/models/AllvogHMMprofiles.tar.gz')
@@ -39,4 +42,15 @@ if not os.path.isfile('models/all_vogs_hmm_profiles_feb2018.hmm.h3m'):
 else:
     print('HMM Database is already set.\n')
 
+if not os.path.isdir('datasets'):
+    print('Downloading datasets. Do not worry, that will just take a few minutes and is executed only in the first time... \n')
+    os.system('wget http://projetos.lbi.iq.usp.br/phaghost/vHULK/datasets/training_dataset_Jun_2022.tar.xz')
+    print('Extracting models files...\n')
+    if subprocess.call('tar -xzf training_dataset_Jun_2022.tar.xz', shell=True) == 1:
+        print('Error extracting models. Please this script again\n')
+        quit()
+    print('Trained models are all set!\n')
+else:
+    print('Trained models are already set.\n')        
+    
 print('Thank you for using v.HULK.')
