@@ -19,7 +19,7 @@ if not os.path.isdir('models'):
     os.system('wget http://projetos.lbi.iq.usp.br/phaghost/vHULK/models/models_Jun_2022.tar.xz')
     print('Extracting models files...\n')
     if subprocess.call('tar -xzf models_Jun_2022.tar.xz', shell=True) == 1:
-        print('Error extracting models. Please this script again\n')
+        print('Error extracting models. Please this run script again or contact the developers.\n')
         quit()
     print('Trained models are all set!\n')
 else:
@@ -30,7 +30,7 @@ if not os.path.isfile('models/all_vogs_hmm_profiles_feb2018.hmm.h3m'):
     os.system('wget http://projetos.lbi.iq.usp.br/phaghost/vHULK/models/AllvogHMMprofiles.tar.gz')
     print('Extracting database file...\n')
     if subprocess.call('tar -xzf AllvogHMMprofiles.tar.gz', shell=True) == 1:
-        print('Error extracting database\n')
+        print('Error extracting database. Please run this script again or contact the developers.\n')
         quit()
     subprocess.run('cat AllvogHMMprofiles/* > models/all_vogs_hmm_profiles_feb2018.hmm', shell=True)
     subprocess.run('rm -r AllvogHMMprofiles/ AllvogHMMprofiles.tar.gz', shell=True)
@@ -45,9 +45,9 @@ else:
 if not os.path.isdir('datasets'):
     print('Downloading datasets. Do not worry, that will just take a few minutes and is executed only in the first time... \n')
     os.system('wget http://projetos.lbi.iq.usp.br/phaghost/vHULK/datasets/training_dataset_Jun_2022.tar.xz')
-    print('Extracting models files...\n')
+    print('Extracting dataset files...\n')
     if subprocess.call('tar -xzf training_dataset_Jun_2022.tar.xz', shell=True) == 1:
-        print('Error extracting models. Please this script again\n')
+        print('Error extracting models. Please run this script again or contact the developers.\n')
         quit()
     print('Trained models are all set!\n')
 else:
