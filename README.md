@@ -11,6 +11,11 @@ A preview of vHULK's publication is available in
 [BioRxiv](https://doi.org/10.1101/2020.12.06.413476) 
 as the original manuscript is under review.
 
+## Release Note June, 17th 2022
+
+For new submission consider only the scripts **download_and_set_models.py** and **training.py**.
+Shortly we will reimplement the tool vHULK fully.
+
 ## Release Note March, 27th 2021
 
 We implemented some changes to the tool following suggestions provided by Reviewers. These include:
