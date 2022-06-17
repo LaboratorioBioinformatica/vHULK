@@ -14,6 +14,7 @@ as the original manuscript is under review.
 ## Release Note June, 17th 2022
 
 For new submission consider only the scripts **download_and_set_models.py** and **training.py**.
+
 Shortly we will reimplement the tool vHULK fully.
 
 ## Release Note March, 27th 2021
