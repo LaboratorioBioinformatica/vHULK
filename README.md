@@ -11,21 +11,6 @@ A preview of vHULK's publication is available in
 [BioRxiv](https://doi.org/10.1101/2020.12.06.413476) 
 as the original manuscript is under review.
 
-## Release Note June, 17th 2022
-
-vHULK is going through updates. Consider only the scripts **download_and_set_models.py** and **training.py**.
-
-Shortly we will reimplement the tool vHULK.
-
-## Release Note March, 27th 2021
-
-We implemented some changes to the tool following suggestions provided by Reviewers. These include:
-* L2 regularization to weights of the Artificial Neural Network
-* Models based on ReLU activation functions were removed
-* Models now are included in this git repository and will be downloaded along with source code (cloning)
-* The decision tree used to make an unified final prediction was simplified
-* Other minor changes
-
 ## Phage Host Prediction using high level features and neural networks
 
 Metagenomics and sequencing techniques have greatly improved in these last 
@@ -65,10 +50,6 @@ Achromobacter, Acidianus, Acinetobacter, Aeromonas, Arthrobacter, Bacillus, Brev
 
 Main script:
    * **vHULK.py** - Deep learning host prediction from phage genomes
-  
-Auxiliary script:
-   * **download_and_set_models.py** - Used only at the first use for 
-   downloading and setting models
    
 ### Dependencies
 
@@ -126,23 +107,6 @@ download and extract it to a directory inside your computer:
 ```
 $ git clone https://github.com/LaboratorioBioinformatica/vHULK
 ```
-
-### Download models
-
-The helper script `download_and_set_models.py` can be used to download all 
-data dependencies required for vHULK to run.
-
-This is required only once and it is simple. Just run:
-```
-(vHULK)$ python download_and_set_models.py
-```
-This will download HMM models to a directory called `models`, which stores all necessary 
-data. You can move the whole directory in a location of your preference and
-point to it with the `-m` option of `vHULK.py` when running vHULK. 
-By default, vHULK searches for it in the same path where the executable is 
-located.
-
-
 ## Usage
 
 The `vHULK.py` is an executable script. Its location can be included in your 
@@ -161,7 +125,13 @@ Alternatively, all invocations must point to its full location e.g.
 (vHULK)$ /full/path/to/vHULK.py -h
 ```
 
-Here, it is assumed tha it is available in your `$PATH`.
+Here, it is assumed that it is available in your `$PATH`.
+
+In the first use it will download the databases to a directory called `database`, which stores all necessary 
+data. You can move the whole directory in a location of your preference and
+point to it with the `-m` option of `vHULK.py` when running vHULK. 
+By default, vHULK searches for it in the same path where the executable is 
+located.
 
 To list all options available run
 ```
@@ -207,7 +177,7 @@ To try these examples, run:
 (vHULK)$ vHULK.py -i test_input -o test_output -t 4
 ```
 
-It should take about 2 minutes to generate your nice and accurate predictions.
+It should take about 2 to 3 minutes to generate one prediction.
 
 ## Input
 
@@ -243,11 +213,7 @@ MN41915_vibrio_cholerae,Vibrio,0.9746623635292053,Vibrio_cholerae,0.981262147426
 MN689520_lactococcus_lactis,Lactococcus,0.981468915939331,Lactococcus_lactis,0.9516076445579529,Lactococcus_lactis,0.14059613645076752
 ZC4_composting_unknown,Streptomyces,0.8378896713256836,Streptomyces_lividans,0.6341040134429932,Streptomyces_lividans,0.955293595790863
 ```
-
-Note that there is a header in the output file, and it is self explanatory. 
-
-Nonetheless:  
-
+Information in the output file.
 * 1st column: ID of the submitted sequence  
 * 2nd to 5th columns: Host prediction and respective score for each one of the
 two vHULK's internal models  
@@ -260,4 +226,3 @@ otherwise.
 
 The output directory also contains two more subdirectories holding the 
 intermediate results of prokka and hmmscan. These are named accordingly.
-
