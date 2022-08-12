@@ -1,25 +1,11 @@
 #!/usr/bin/env python3
 # coding: utf-8
-# Edited August, 8th 2022
+# Edited August, 5th 2022
 ## This is vHULK: viral Host Unveiling Kit
 # Developed by Bruno Iha and Deyvid Amgarten
 # Creative commons
 
 __version__ = "2.0.0"
-
-# Verify, download and set databases
-import os
-import subprocess
-
-if not os.path.isdir('database'):
-    print('Downloading databases. This will only be done in the first use.')
-    os.system('wget -q http://projetos.lbi.iq.usp.br/phaghost/vHULK/database_Jun_2022.tar.xz')
-    print('Extracting databases files...\n')
-    if subprocess.call('tar -xf database_Jun_2022.tar.xz', shell=True) == 1:
-        subprocess.call('rm database_Jun_2022.tar.xz', shell=True)
-        print('Error extracting databases. Please this run script again or contact the developers.')
-        quit()
-    print('Databases are all set!')
 
 # Required modules
 import numpy as np
@@ -32,6 +18,21 @@ import argparse
 from tensorflow.keras.models import load_model
 from scipy.special import entr, logsumexp
 import csv
+from sklearn.preprocessing import MinMaxScaler
+from joblib import load
+import os
+import subprocess
+
+# Verify, download and set databases
+if not os.path.isdir('database'):
+    print('Downloading databases. This will only be done in the first use.')
+    os.system('wget -q http://projetos.lbi.iq.usp.br/phaghost/vHULK/database_Jun_2022.tar.xz')
+    print('Extracting databases files...\n')
+    if subprocess.call('tar -xf database_Jun_2022.tar.xz', shell=True) == 1:
+        subprocess.call('rm database_Jun_2022.tar.xz', shell=True)
+        print('Error extracting databases. Please this run script again or contact the developers.')
+        quit()
+    print('Databases are all set!')
 
 # Full path for the script
 here = Path(__file__).resolve().parent
@@ -54,8 +55,8 @@ def parse_arguments():
         default=1, type=int, help="Number of CPU threads to be used by Prokka and hmmscan")
     optionalArgs.add_argument( "-m", "--models-dir", required=False, dest="models_dir", 
         type=lambda p: Path(p).resolve(), default=here / Path("database"), help="Path to directory where all models are stored.")
-    optionalArgs.add_argument( "-f", "--files-dir", required=False, dest="files_dir",
-        default=here / Path("database"), help="Files directory provided with vHULK")
+    optionalArgs.add_argument( "-p", "--prune", required=False, dest="prune",
+        default=True, help="Set True to prune bad results or False to show them all")
     optionalArgs.add_argument( "--all", required=False, dest="write_all",
         action="store_true", help="Write predictions for all input bins/genomes, even if they "
         "were skipped (size filtered or hmmscan failed)")
@@ -63,8 +64,8 @@ def parse_arguments():
     parser._action_groups.append(optionalArgs)
     return parser.parse_args()
 
-def check_databases_integrity( models_dir, files_dir ):
-    #check if all database files are present
+#check if all database files are present
+def check_databases_integrity( models_dir):
 
     if not models_dir.is_dir():
         print("ERROR :Missing databases directory {}\n".format(models_dir))
@@ -72,24 +73,15 @@ def check_databases_integrity( models_dir, files_dir ):
         sys.exit(1)
 
     files_ok = True
-    # tensorflow models
-    for m in ["model_genus", "model_species"]:
-        model_path = models_dir / Path(m)
+    for f in ['model_genus', 'model_species', 
+              'all_vogs_hmm_profiles.hmm', 'VOGs_header.txt',
+              'list_of_hosts_genus.txt', 'list_of_hosts_species.txt', 
+              'scaler_entropy_genus.joblib', 'scaler_entropy_species.joblib']:
+        model_path = models_dir / Path(f)
         if not model_path.exists():
             files_ok = False
             print("ERROR: Missing {} from {}".format(model_path, models_dir))
 
-    vog_profiles = models_dir / Path( "all_vogs_hmm_profiles.hmm" )
-    if not vog_profiles.exists():
-        files_ok = False
-        print("ERROR: Missing {} from {}".format(vog_profiles, models_dir))
-
-    # check if hosts file are present
-    for h in ["list_of_hosts_genus.txt", "list_of_hosts_species.txt", "VOGs_header.txt"]:
-        txt_fp = files_dir / Path(h)
-        if not txt_fp.exists():
-            files_ok = False
-            print("ERROR: Missing {} from {}".format(txt_fp, files_dir))
     return files_ok
 
 """
@@ -176,32 +168,53 @@ def construct_gene_scores_matrix(hmmtable):
             dic_genes_scores[gene.id].append( [hit.id, np.uint8(scale_data(hit.evalue))] )
     return dic_genes_scores
 
-def predict_instance(x, model, hosts, species_or_genus):
+def predict_instance(x, model, hosts, species_or_genus, models_dir):
     pred = []
     pred.append(x) # tensorflow needs a batch of inputs to predict. 
     pred.append(x) # so we duplicate de number of inputs and then just get half of the results
     pred = np.array(model.predict(pred))[0]
+    
     if not pred.any():
         name = "None"
         score = 0
     else:
         name = hosts[ np.argmax(pred) ]
         score = pred[ np.argmax(pred) ]
-    if species_or_genus == 'species':
-        entropy = 27*sum(entr(pred))
-        energy = 71*(-logsumexp(pred)+5.2379565)
-    elif species_or_genus == 'genus':
+    
+    scaler_entropy_genus = load( models_dir / Path('scaler_entropy_genus.joblib'))
+    #scaler_energy_genus = load( models_dir / Path('scaler_energy_genus.joblib'))
+    scaler_entropy_species = load( models_dir / Path('scaler_entropy_species.joblib'))
+    #scaler_energy_species = load( models_dir / Path('scaler_energy_species.joblib'))
+    
+    if species_or_genus == 'genus':
         entropy = 2.6*sum(entr(pred))
-        energy = 1100*(-logsumexp(pred)+4.36588)
-    return name, score, entropy, energy
+        #energy = 10*scaler_energy_genus.transform( [[-logsumexp(pred)]] )[0][0]
+    if species_or_genus == 'species':
+        entropy = 10*scaler_entropy_species.transform( [[sum( entr(pred) )]] )[0][0]
+        #energy = 10*scaler_energy_species.transform( [[-logsumexp(pred)]] )[0][0]
+    
+    return name, score, entropy
 
 """
 Predict genus and species for one input
 """
-def predict(x, genus_model, genus_hosts, species_model, species_hosts):
-    name_genus, score_genus, entropy_genus, energy_genus = predict_instance(x, genus_model, genus_hosts, 'genus')
-    name_species, score_species, entropy_species, energy_species = predict_instance(x, species_model, species_hosts, 'species')
-    prediction = { "pred_genus": name_genus, "score_genus": score_genus, "entropy_genus": entropy_genus, "energy_genus": energy_genus, "pred_species": name_species, "score_species": score_species, "entropy_species": entropy_species, "energy_species": energy_species}
+def predict(x, genus_model, genus_hosts, species_model, species_hosts, prune, models_dir):
+    name_genus, score_genus, entropy_genus = predict_instance(x, genus_model, genus_hosts, 'genus', models_dir)
+    name_species, score_species, entropy_species = predict_instance(x, species_model, species_hosts, 'species', models_dir)
+
+    if prune == True:
+        if (score_genus < 0.3) or (entropy_genus > 5.0):
+            name_genus, score_genus, entropy_genus = 'None', 0.0, 0.0
+        if entropy_species > 6.3 or name_species.split('_')[0] != name_genus:
+            name_species, score_species, entropy_species = 'None', 0.0, 0.0
+
+    prediction = { "pred_genus": name_genus, 
+                   "score_genus": score_genus, 
+                   "entropy_genus": entropy_genus, 
+                   "pred_species": name_species, 
+                   "score_species": score_species, 
+                   "entropy_species": entropy_species}
+        
     return prediction
 
 ##########
@@ -216,20 +229,21 @@ def main():
     input_dir = args.input_dir
     output_dir = args.output_dir
     models_dir = args.models_dir
-    files_dir = args.files_dir
     threads = args.threads
+    prune = args.prune
     
     ################################
     ## Verify databases integrity ##
     ################################
 
-    if check_databases_integrity( models_dir, files_dir ):
+    if check_databases_integrity( models_dir ):
         model_genus = load_model( models_dir / Path("model_genus") )
         model_species = load_model( models_dir / Path("model_species") )
-        with open( files_dir / Path("list_of_hosts_genus.txt") , "r") as fin:
+        with open( models_dir / Path("list_of_hosts_genus.txt") , "r") as fin:
             genus_hosts = [line.rstrip() for line in fin]
-        with open( files_dir / Path("list_of_hosts_species.txt") , "r") as fin:
+        with open( models_dir / Path("list_of_hosts_species.txt") , "r") as fin:
             species_hosts = [line.rstrip() for line in fin]
+
     else:
         print( "Please run this script again to make sure you have all data required for v.HULK" )
         sys.exit(1)
@@ -324,7 +338,7 @@ def main():
 
     # Initialize a dictionary that holds some info
     dic_vogs_headers = {}
-    headers_fp = files_dir / Path("VOGs_header.txt")
+    headers_fp = models_dir / Path("VOGs_header.txt")
     with open(headers_fp, "r") as fin:
         for line in fin:
             vog = line.rstrip()
@@ -339,6 +353,11 @@ def main():
     ######################################
     
     print("**Starting deep learning predictions")
+    
+    predictions_dir = output_dir / Path("predictions")
+    if not predictions_dir.is_dir():
+        predictions_dir.mkdir(parents=True, exist_ok=True)
+    
     for entry in valid_faas:
         hmmtable = hmmscan_dir / Path( "_".join([entry, "hmmscan.tbl"]) )
         gene_scores = construct_gene_scores_matrix(hmmtable)
@@ -351,10 +370,10 @@ def main():
 
         x = x.sum()
         x = x.values.tolist()
-        x = predict(x, model_genus, genus_hosts, model_species, species_hosts)
+        x = predict(x, model_genus, genus_hosts, model_species, species_hosts, prune, models_dir)
         
         # Print results for this entry
-        with open(output_dir / Path("prediction_"+entry+".csv"), 'w') as f:
+        with open(predictions_dir / Path(entry+".csv"), 'w') as f:
             w = csv.DictWriter(f, x.keys())
             w.writeheader()
             w.writerow(x)
