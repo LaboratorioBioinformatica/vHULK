@@ -212,3 +212,6 @@ i.e., values close to 0 correlate with higher accuracies and above 2 correlate w
 
 The output directory also contains two more subdirectories holding the 
 intermediate results of prokka and hmmscan. These are named accordingly.
+
+## Tensorflow packages that don't require GPUs
+* [Windows](https://github.com/fo40225/tensorflow-windows-wheel)
