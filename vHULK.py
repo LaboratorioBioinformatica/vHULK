@@ -26,10 +26,10 @@ import subprocess
 # Verify, download and set databases
 if not os.path.isdir('database'):
     print('Downloading databases. This will only be done in the first use.')
-    os.system('wget -q http://projetos.lbi.iq.usp.br/phaghost/vHULK/database_Jun_2022.tar.xz')
+    os.system('wget -q http://projetos.lbi.iq.usp.br/phaghost/vHULK/database_Aug_2022.tar.xz')
     print('Extracting databases files...\n')
-    if subprocess.call('tar -xf database_Jun_2022.tar.xz', shell=True) == 1:
-        subprocess.call('rm database_Jun_2022.tar.xz', shell=True)
+    if subprocess.call('tar -xf database_Aug_2022.tar.xz', shell=True) == 1:
+        subprocess.call('rm database_Aug_2022.tar.xz', shell=True)
         print('Error extracting databases. Please this run script again or contact the developers.')
         quit()
     print('Databases are all set!')
