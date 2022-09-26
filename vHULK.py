@@ -18,7 +18,6 @@ import argparse
 from tensorflow.keras.models import load_model
 from scipy.special import entr, logsumexp
 import csv
-from sklearn.preprocessing import MinMaxScaler
 from joblib import load
 import os
 import subprocess
