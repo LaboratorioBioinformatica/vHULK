@@ -65,10 +65,11 @@ dependencies.
 
 These python libraries are required:
 
-* [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), [Scikit-learn](https://scikit-learn.org)
-* [Scipy](https://www.scipy.org/) - Efficiently handling arrays and scientific computing for Python
+* [Numpy](http://www.numpy.org/) - Fast calculations with numerical data
+* [Pandas](https://pandas.pydata.org/) - Data management
+* [Scipy](https://www.scipy.org/) - Efficient cientific computing with arrays
 * [Biopython](http://biopython.org/) - Handling biological sequences
-* [Tensorflow](https://www.tensorflow.org/) > 2.8 - Google's Deep Neural Networks libraries
+* [Tensorflow](https://www.tensorflow.org/) > 2.8 - Google's Neural Networks library
 
 To install these dependencies, there are usually two ways: 
 [pip](https://pypi.org/project/pip/) or 
