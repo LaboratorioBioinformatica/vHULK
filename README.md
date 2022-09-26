@@ -65,10 +65,10 @@ dependencies.
 
 These python libraries are required:
 
-* [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), 
+* [Numpy](http://www.numpy.org/), [Pandas](https://pandas.pydata.org/), [Scikit-learn](https://scikit-learn.org)
 * [Scipy](https://www.scipy.org/) - Efficiently handling arrays and scientific computing for Python
 * [Biopython](http://biopython.org/) - Handling biological sequences
-* [Tensorflow](https://www.tensorflow.org/) - Google's Deep Neural Networks libraries 
+* [Tensorflow](https://www.tensorflow.org/) > 2.8 - Google's Deep Neural Networks libraries
 
 To install these dependencies, there are usually two ways: 
 [pip](https://pypi.org/project/pip/) or 
@@ -81,14 +81,14 @@ Install all requirements using these commands:
 ```
 $ conda create -n vHULK -c conda-forge -c bioconda -c defaults prokka
 $ conda install -n vHULK -c bioconda hmmer
-$ conda install -n vHULK -c bioconda -c anaconda numpy pandas scipy biopython tensorflow=2.4.1
+$ conda install -n vHULK -c bioconda -c anaconda numpy pandas scipy biopython tensorflow=2.8.2
 $ conda activate vHULK 
 ```
 
 > Note
 >
 > Some people have been facing issues with newer versions of Prokka or TensorFlow. 
-> To avoid such problems, we froze a working version with TensorFlow 2.9.0 we know
+> To avoid such problems, we froze a working version with TensorFlow 2.8.2 we know
 > for sure it works with vHULK.
 
 If all went well your command-line prompt will now be prefixed with the 
