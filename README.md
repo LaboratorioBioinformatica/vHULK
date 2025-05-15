@@ -5,7 +5,7 @@
 **V**iral **H**ost **U**nvei**L**ing **K**it - A toolkit for phage host 
 prediction
 
-### Pre-print publication
+### Publication
 
 vHULK's publication is available in [PHAGE](https://doi.org/10.1089/phage.2021.0016).
 
