@@ -7,9 +7,7 @@ prediction
 
 ### Pre-print publication
 
-A preview of vHULK's publication is available in 
-[BioRxiv](https://doi.org/10.1101/2020.12.06.413476) 
-as the original manuscript is under review.
+vHULK's publication is available in [PHAGE](https://doi.org/10.1089/phage.2021.0016).
 
 ## Phage Host Prediction using high level features and neural networks
 
